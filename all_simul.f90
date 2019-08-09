@@ -1051,7 +1051,7 @@ USE My_variables
 
 
 implicit doubleprecision(a-h,o-z)
-external et_function,lsjac
+external et_function!,lsjac
 
 common/et_est/et_rate,storage_pre,current_flow,current_release,bal_net, iwrite
 
