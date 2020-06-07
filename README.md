@@ -17,7 +17,7 @@ There are four ways to run the model. You can change how the model will run by c
     - This is how the model is currently setup to run. 
     - The `runflag.dat` contains a single `0` in the first line and nothing else
     - The first line in the `input.dat` file is `12  1  1`
-    - All of the specified inflow files in `watershed_details.dat` are of the form `<reservoir_name>_97_inflow.dat` where `reservoir_name` is replaced with each reservoirs name. 
+    - All of the specified inflow files in `watershed_details.dat` are of the form `<reservoir_name>_97_inflow.dat` where `reservoir_name` is replaced with each reservoir's name. 
 2. Inflow Ensemble Simulation
     - The `runflag.dat` file is the same for Single Trace Simulation
     - The first line in the `input.dat` file is `12  1  100`
