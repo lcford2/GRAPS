@@ -8,6 +8,7 @@ external constr_res,expected_benefits,grobfd,grcnfd,ffsqp,simple_benefits,spill_
 
 double precision, allocatable	::	decision_var_lb(:),decision_var_ub(:), decision_var(:),w(:),g(:),f(:)
 Integer,allocatable :: iw(:)
+double precision expect_bens, initial_bens
 
 
 ! Opening input files for reading
@@ -25,6 +26,8 @@ open(unit=20, file = 'input_data_files/ibasin_flow_details.dat',	ACTION = 'READ'
 open(unit=21, file = 'input_data_files/demand_flow_details.dat',	ACTION = 'READ', STATUS = 'OLD')
 open(unit=22, file = 'input_data_files/sink_details.dat',			ACTION = 'READ', STATUS = 'OLD')
 open(unit=23, file = 'input_data_files/interbasin_details.dat',		ACTION = 'READ', STATUS = 'OLD')
+open(unit=24, file = 'input_data_files/runflag.dat',                ACTION = 'READ', STATUS = 'OLD')
+open(unit=25, file=  'input_data_files/model_para.dat',				ACTION = 'READ', STATUS = 'OLD')
 ! Opening output files for writing
 open(unit=31, file = 'output_files/storage.out')
 open(unit=32, file = 'output_files/hydro.out')
@@ -33,11 +36,13 @@ open(unit=34, file = 'output_files/flow_sets.out')
 open(unit=35, file = 'output_files/node_flow.out')
 open(unit=36, file = 'output_files/spill.out')
 open(unit=37, file = 'output_files/deficit.out')
+open(unit=38, file = 'output_files/benefits.out')
 
 !  reading input.dat 
 read(10,*)ntime,nperiods,nensem
 read(10,*)nwatershed,nnatural_flow,nres,nuser,nfnode,ndir_inflows,nret_inflows,ndiversion,nspill_flow,ninterbasin_flow,ndemand_release,nsink,ninterbasin
 
+! checksum should equal the total number of system blocks and links. It will be the sum of the second line in `input.dat`
 checksum = nwatershed+nnatural_flow+nres+nuser+nfnode+ndir_inflows+nret_inflows+ndiversion+nspill_flow+ninterbasin_flow+ndemand_release+nsink+ninterbasin
 
 ! ntime = Number of time steps
@@ -76,31 +81,26 @@ Allocate(my_spill_flow(nspill_flow),my_natural_flow(nnatural_flow),my_interbasin
 icount = 0
 icount_max = checksum
 
-
 DO WHILE (icount<icount_max)
-
 ! call each subroutines and read input files 
-
   read(10,21)itype,type_details
-	if(itype.eq.1)call read_watershed_details(my_watershed,nwatershed,ntime,nensem)
-	if(itype.eq.2)call read_nflow_details(my_natural_flow,nnatural_flow)
-	if(itype.eq.3)call read_reservoir_details(my_reservoir,nres,ntime,nensem)
-	if(itype.eq.4)call read_user_details(my_user,nuser,ntime, nensem)
-  	if(itype.eq.5)call read_node_details(my_node,nfnode)
-	if(itype.eq.6)call read_dir_inflows_details(my_dir_inflows,ndir_inflows)
-	if(itype.eq.7)call read_ret_inflows_details(my_ret_inflows,nret_inflows)
-	if(itype.eq.8)call read_diversions_details(my_diversions,ndiversion)
-	if(itype.eq.9)call read_spillflow_details(my_spill_flow,nspill_flow)
-	if(itype.eq.10)call read_interbasin_flow_details(my_interbasin_flow,ninterbasin_flow)
-	if(itype.eq.11)call read_demandrelease_details(my_demand_release,ndemand_release)
-	if(itype.eq.12)call read_sink_details(my_sink,nsink)
-	if(itype.eq.13)call read_interbasin_details(my_interbasin,ninterbasin,ntime)
+	if(itype.eq.1)	call read_watershed_details(my_watershed,nwatershed,ntime,nensem,nperiods)
+	if(itype.eq.2)	call read_nflow_details(my_natural_flow,nnatural_flow)
+	if(itype.eq.3)	call read_reservoir_details(my_reservoir,nres,ntime,nensem,nperiods)
+	if(itype.eq.4)	call read_user_details(my_user,nuser,ntime,nensem,nperiods)
+  	if(itype.eq.5)	call read_node_details(my_node,nfnode)
+	if(itype.eq.6)	call read_dir_inflows_details(my_dir_inflows,ndir_inflows)
+	if(itype.eq.7)	call read_ret_inflows_details(my_ret_inflows,nret_inflows)
+	if(itype.eq.8)	call read_diversions_details(my_diversions,ndiversion)
+	if(itype.eq.9)	call read_spillflow_details(my_spill_flow,nspill_flow)
+	if(itype.eq.10)	call read_interbasin_flow_details(my_interbasin_flow,ninterbasin_flow)
+	if(itype.eq.11)	call read_demandrelease_details(my_demand_release,ndemand_release)
+	if(itype.eq.12)	call read_sink_details(my_sink,nsink)
+	if(itype.eq.13)	call read_interbasin_details(my_interbasin,ninterbasin,ntime,nperiods)
 
 icount = icount +1 
-
 END DO
 
-!print *, 'wwww'
 ! Close the input files
 close(10)
 close(11)
@@ -117,136 +117,157 @@ close(21)
 close(22)
 close(23)
 
-
-
 !   Convert the data structure into input parameters for the optimization routine.
-
+ntime = ntime*nperiods
 nparam = (nuser*ntime) ! each reservoir should be given a minimum of one user for downstream release and it should be defined in the user_details.dat
 nsimul_block = nres + nfnode
 ntotal_vertices = nwatershed + nres + nuser + nfnode + ninterbasin_flow + nsink 
 
 Allocate(decision_var_lb(nparam), decision_var_ub(nparam), decision_var(nparam))
 
+Allocate(spill_values(nparam))
+
 Allocate(temp_decision_var(nparam),isimul_status(nsimul_block),my_network_order(nsimul_block))
 
 Allocate(searched_vertices(ntotal_vertices))
 
 ! Initialize temporary decision variable
-
 call array_ini(nparam,temp_decision_var,-10.0d0)
+
+! Initialize spill values for optimization
+call array_ini(nparam, spill_values, 0.0)
 
 call solution_path()
 
-print *, (k1, my_network_order(k1)%order_type, my_network_order(k1)%order_id, k1=1, nsimul_block)
+! print *, (k1, my_network_order(k1)%order_type, my_network_order(k1)%order_id, k1=1, nsimul_block)
 
 ! Extract lower and upper bounds of decision variables.
 
 call constr_decision_extract(decision_var_lb,decision_var_ub, decision_var,nparam)
-open(unit=60,file='runflag.dat',ACTION = 'READ', STATUS = 'OLD')
-read(60,*)runflag
-close(60)
-
-if(runflag == 1)then 
-! Read parameters for FFSQP
-
-open(unit =40, file='model_para.dat',ACTION = 'READ', STATUS = 'OLD')
-
-read(40,*)nf,mode,iprint,miter
-read(40,*)bigbnd,eps,epseqn,udelta 
-! model params to modify in the above file, if needed : 
-! nf : Number of objective fucntions 
-! mode : 110 [CBA - ref. ffsqp.f ] 
-!iprint : print level information 
-! miter : maximum Number of iteration 
-! bigbnd : plus infinity 
-! eps : stopping criterion that ensures a solution, the norm of the Newton direction vector is smaller than eps 
-! epseqn : tolerance of the violation of nonlinear equality constraints allowed by the user at an optimal solution 
-! udelta : perturbation size 
-
-close(40)
-end if 
+! reading fun flag for optimization
+read(24,*)runflag
+if (runflag.eq.1) read(24, *) objective_function
+close(24)
 
 nres_level = my_reservoir(1)%nres_level
-! total Number of constraints 
-ncons = nuser + nres_level + nres  
+! total number of contraints 
+ncons = nres + nuser + nres_level 
+! storage reliability contraint for each reservoir
+! user contract reliability contraint for each user
+! restricition level probability contraints
 
 Allocate(cons_global(ncons),value_net(nensem))
 
-! The above line calculates the total Number of constraints. It is better to represent equality constraint as inequality constraints
+! The above line calculates the total number of constraints. It is better to represent equality constraint as inequality constraints
 ! It will ease the solver.
-! nuser - represents reliability constraint for each user
-! nres_level - represents the total Number of restricion level constraints
-! nres - represents the end of the year storage constraints
-! AT this point, rule curves are not incorporated as constraints. It could be modified if required.
+! At this point, rule curves are not incorporated as constraints. It could be modified if required.
 
 Allocate(my_flow_set(nwatershed),parallel_track(nwatershed))
 
-
 Do i = 1,nwatershed
-
-		Allocate(my_flow_set(i)%controlled_flows(ntime), my_flow_set(i)%uncontrolled_flows(ntime,nensem))
-
+	Allocate(my_flow_set(i)%controlled_flows(ntime), my_flow_set(i)%uncontrolled_flows(ntime,nensem))
 end do
+
 if(runflag == 1) then
-! nineqn : Number of nonlinear inequality constraints
-nineqn = ncons 
-! nineq  : Number of inequality constraints     
-nineq = nineqn
-! neqn   : Number of nonlinear equality constraints 
-neqn = 0
-! neq    : Number of equality constraints 
-neq = 0
-! working space dimension allocation for fsqp 
-iwsize = 6*nparam + 8*max(1,nineq+neq)+7*max(1,nf)+30
-nwsize = 4*nparam*nparam + 5*max(1,nineq+neq)*nparam
-nwsize = nwsize + 3*max(1,nf)*nparam + 26*(nparam + max(1,nf))
-nwsize = nwsize + 45*max(1,nineq+neq) +100
+	! Read parameters for FFSQP
+	read(25,*)nf,mode,iprint,miter
+	read(25,*)bigbnd,eps,epseqn,udelta 
+	! model params to modify in the above file, if needed : 
+	! nf : Number of objective fucntions 
+	! mode : 110 [CBA - ref. ffsqp.f ] 
+	!iprint : print level information 
+	! miter : maximum Number of iteration 
+	! bigbnd : plus infinity 
+	! eps : stopping criterion that ensures a solution, the norm of the Newton direction vector is smaller than eps 
+	! epseqn : tolerance of the violation of nonlinear equality constraints allowed by the user at an optimal solution 
+	! udelta : perturbation size 
+	close(25)
+	! nineqn : Number of nonlinear inequality constraints
+	nineqn = ncons 
+	! nineq  : Number of inequality constraints     
+	nineq = nineqn
+	! neqn   : Number of nonlinear equality constraints 
+	neqn = 0
+	! neq    : Number of equality constraints 
+	neq = 0
+	! working space dimension allocation for fsqp 
+	iwsize = 6*nparam + 8*max(1,nineq+neq)+7*max(1,nf)+30
+	nwsize = 4*nparam*nparam + 5*max(1,nineq+neq)*nparam
+	nwsize = nwsize + 3*max(1,nf)*nparam + 26*(nparam + max(1,nf))
+	nwsize = nwsize + 45*max(1,nineq+neq) +100
 
-ncheck = nineq + neq
-print *, 'ncheck = ',ncheck
+	ncheck = nineq + neq
+	! print *, 'ncheck = ',ncheck
 
-Allocate(iw(iwsize))
-Allocate(w(nwsize),g(ncheck),f(nf))
+	Allocate(iw(iwsize))
+	Allocate(w(nwsize),g(ncheck),f(nf))
 
-print *, 'iwsize = ',iwsize 
-print *, 'nwsize = ',nwsize 
-print *, nparam
+	! print *, 'iwsize = ',iwsize 
+	! print *, 'nwsize = ',nwsize 
+	print *, nparam
 
-ifinal = 0
-inform = 0
-index_cons = 1
-print *, "entering FSQP..........."
-call FFSQP(nparam,nf,nineqn,nineq,neqn,neq,mode,iprint,miter,inform,bigbnd,eps,  &
-           epsneq,udelta,decision_var_lb, decision_var_ub, decision_var,         &
-          f,g,iw,iwsize,w,nwsize,expected_benefits,constr_res,grobfd,grcnfd)
-
-print *, "Completed running FSQP............."
+	ifinal = 0
+	inform = 0
+	index_cons = 1
+	if (objective_function.eq."simple_benefits") then
+		call simple_benefits(nparam, 1, decision_var, initial_bens)
+		call FFSQP(nparam,nf,nineqn,nineq,neqn,neq,mode,iprint,miter,inform,bigbnd,eps,  &
+				epsneq,udelta,decision_var_lb, decision_var_ub, decision_var,         &
+				f,g,iw,iwsize,w,nwsize,simple_benefits,constr_res,grobfd,grcnfd)
+		call simple_benefits(nparam, 1, decision_var, expect_bens)
+		initial_bens = -initial_bens
+		expect_bens = -expect_bens
+	else if (objective_function.eq."max_release") then
+		call max_release(nparam, 1, decision_var, initial_bens)
+		call FFSQP(nparam,nf,nineqn,nineq,neqn,neq,mode,iprint,miter,inform,bigbnd,eps,  &
+				epsneq,udelta,decision_var_lb, decision_var_ub, decision_var,         &
+				f,g,iw,iwsize,w,nwsize,max_release,constr_res,grobfd,grcnfd)
+		call max_release(nparam, 1, decision_var, expect_bens)
+		initial_bens = -initial_bens
+		expect_bens = -expect_bens
+	else if (objective_function.eq."spill_objective") then
+		call spill_objective(nparam, 1, decision_var, initial_bens)
+		call FFSQP(nparam,nf,nineqn,nineq,neqn,neq,mode,iprint,miter,inform,bigbnd,eps,  &
+				epsneq,udelta,decision_var_lb, decision_var_ub, decision_var,         &
+				f,g,iw,iwsize,w,nwsize,spill_objective,constr_res,grobfd,grcnfd)
+		call spill_objective(nparam, 1, decision_var, expect_bens)
+	else
+		call expected_benefits(nparam, 1, decision_var, initial_bens)
+		call FFSQP(nparam,nf,nineqn,nineq,neqn,neq,mode,iprint,miter,inform,bigbnd,eps,  &
+				epsneq,udelta,decision_var_lb, decision_var_ub, decision_var,         &
+				f,g,iw,iwsize,w,nwsize,expected_benefits,constr_res,grobfd,grcnfd)
+		call expected_benefits(nparam, 1, decision_var, expect_bens)
+		initial_bens = -initial_bens
+		expect_bens = -expect_bens
+	end if
+	write(38, "(F20.4)") expect_bens
 end if 
 ifinal = 1  
  
 call constr_res(nparam,index_cons,decision_var,gcons)
-print *, "ifinal = ",ifinal
-! end running optimization or simulation
-print *, "exiting..........."
-!icount = 1
-icount_max = nuser*ntime
-!do while (icount <= icount_max)
-write(33,50)(decision_var(k1),k1=1,icount_max)
-!icount = icount + 1
-!end do 
+write(*,"(A,1x,F12.2)") "Expected Benefits :", -expect_bens
 
+write(33,50)(decision_var(k1),k1=1,icount_max)
+
+close(31)
+close(32)
 close(33)
-21  FORMAT(I3,1x,A40)
+close(34)
+close(35)
+close(36)
+close(37)
+close(38)
+
+21 FORMAT(I3,1x,A40)
 22 FORMAT(I3,1x,A30) 
 50 FORMAT(F10.3)
-100	STOP 
-! end of multireservoir 
- 	END 
+
+END 
 
 ! Following functions are for reading input files.
 
 ! subroutine to read watershed details.dat 
-Subroutine read_watershed_details(my_watershed,nwatershed,ntime, nensem)
+Subroutine read_watershed_details(my_watershed,nwatershed,ntime,nensem,nperiods)
 USE Definitions
 implicit doubleprecision(a-h,o-z)
 character*40  file_name
@@ -271,20 +292,17 @@ Do i = 1,nchild
 
 END DO
 
-Allocate(my_watershed(iNum)%natural_inflows(ntime, nensem))
+Allocate(my_watershed(iNum)%natural_inflows(ntime*nperiods, nensem))
 
 read(11,*)file_name
 
 !print *, file_name
 open(unit=40,file=trim(file_name))
-
 Do k = 1,nensem
-                
-		read(40,*)(my_watershed(iNum)%natural_inflows(j,k), j=1,ntime)
-
-
-END DO
-
+	Do i = i, nperiods
+		read(40,*)(my_watershed(iNum)%natural_inflows(j,k), j=1+((i - 1)*ntime),ntime*i)
+	End Do
+End Do
 close(40)
 
 !Do k = 1,nensem
@@ -337,7 +355,7 @@ RETURN
 END
 
 ! reads unit 13 : reservoir_details.dat 
-Subroutine read_reservoir_details(my_reservoir,nres,ntime,nensem)
+Subroutine read_reservoir_details(my_reservoir,nres,ntime,nensem,nperiods)
 USE Definitions
 implicit doubleprecision(a-h,o-z)
 
@@ -401,10 +419,15 @@ Do i = 1, n3
 
 End do
 
-Allocate(my_reservoir(iNum)%rule_curve(ntime),my_reservoir(iNum)%evaporation_rate(ntime))
+Allocate(my_reservoir(iNum)%rule_curve(ntime*nperiods),my_reservoir(iNum)%evaporation_rate(ntime*nperiods))
 
-read(13,*)(my_reservoir(iNum)%rule_curve(i),i=1,ntime)
-read(13,*)(my_reservoir(iNum)%evaporation_rate(i),i=1,ntime)
+do j = 1, nperiods
+	read(13,*)(my_reservoir(iNum)%rule_curve(i),i=1+((j-1)*ntime),ntime*j)
+end do
+
+do j = 1, nperiods
+	read(13,*)(my_reservoir(iNum)%evaporation_rate(i),i=1+((j-1)*ntime),ntime*j)
+end do
 
 n4 = my_reservoir(iNum)%nres_level
 
@@ -422,7 +445,7 @@ RETURN
 END
 
 ! reads user_details.dat 
-Subroutine read_user_details(my_user,nuser,ntime, nensem)
+Subroutine read_user_details(my_user,nuser,ntime,nensem,nperiods)
 USE Definitions
 implicit doubleprecision(a-h,o-z)
 
@@ -441,7 +464,7 @@ nres_level = my_user(iNum)%nres_level
 
 Allocate(my_user(iNum)%child_id(n1),my_user(iNum)%child_type(n1))
 Allocate(my_user(iNum)%parent_id(n2),my_user(iNum)%parent_type(n2))
-Allocate(my_user(iNum)%demand_fract(ntime), my_user(iNum)%restr_fract(nres_level), my_user(iNum)%res_compensation(nres_level))
+Allocate(my_user(iNum)%demand_fract(ntime*nperiods), my_user(iNum)%restr_fract(nres_level), my_user(iNum)%res_compensation(nres_level))
 
 Do i = 1,my_user(iNum)%nchild
 
@@ -464,7 +487,9 @@ end do
 	my_user(iNum)%minimum_release = t5
 	my_user(iNum)%maximum_release = t6
 	my_user(iNum)%penalty_compen  = t7
-	read(14,*)(my_user(iNum)%demand_fract(i), i=1,ntime)
+	do j = 1, nperiods
+		read(14,*)(my_user(iNum)%demand_fract(i), i=1+((j-1)*ntime),ntime*j)
+	end do
 	read(14,*)(my_user(iNum)%restr_fract(i), i=1,nres_level)
 	read(14,*)(my_user(iNum)%res_compensation(i), i=1,nres_level)
 	
@@ -480,7 +505,7 @@ if(my_user(iNum)%user_type.eq.4)then
 	my_user(iNum)%unit_rate_energy = t6
 
 
-        Allocate(my_user(iNum)%tail_elevation(ntime))
+        Allocate(my_user(iNum)%tail_elevation(ntime*nperiods))
 !        Do k = 1,nensem
                 
 !        		read(14,*)(my_user(iNum)%tail_elevation(j1), j1=1,ntime)
@@ -707,7 +732,7 @@ RETURN
 
 END
 
-Subroutine read_interbasin_details(my_interbasin,ninterbasin,ntime)
+Subroutine read_interbasin_details(my_interbasin,ninterbasin,ntime,nperiods)
 USE Definitions
 implicit doubleprecision(a-h,o-z)
 
@@ -731,9 +756,10 @@ Do i = 1,my_interbasin(iNum)%nchild
 
 end do
 
-Allocate(my_interbasin(iNum)%average_flow(ntime))
-
-read(23,*)(my_interbasin(iNum)%average_flow(j), j=1,ntime)
+Allocate(my_interbasin(iNum)%average_flow(ntime*nperiods))
+do i = 1, nperiods
+	read(23,*)(my_interbasin(iNum)%average_flow(j), j=1+((i-1)*ntime),ntime*i)
+end do
 
 ! outdated conversion
 !Do j = 1,ntime

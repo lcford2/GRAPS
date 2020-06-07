@@ -18,6 +18,7 @@ TYPE (Interbasin), allocatable		 ::	my_interbasin(:)
 TYPE (ordered_network), allocatable  :: my_network_order(:),searched_vertices(:),parallel_track(:)
 TYPE (flow_definitions), allocatable :: my_flow_set(:)
 character*40 type_details
+character*25, objective_function
 
 Integer itype,nres,nuser,nfnode,nsink,nwatershed,ndir_inflows,nret_inflows,ndiversion,nspill_flow,nnatural_flow,ninterbasin_flow,ndemand_release
 Integer ntime,nensem,ncons,iblock,ntotal_vertices,isimul_block,nsimul_block,iflow_set,nres_level,nperiods
