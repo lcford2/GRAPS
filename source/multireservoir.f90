@@ -9,29 +9,30 @@ external constr_res,expected_benefits,grobfd,grcnfd,ffsqp,simple_benefits,spill_
 double precision, allocatable	::	decision_var_lb(:),decision_var_ub(:), decision_var(:),w(:),g(:),f(:)
 Integer,allocatable :: iw(:)
 
+
 ! Opening input files for reading
-open(unit=10, file = 'input.dat',				ACTION = 'READ', STATUS = 'OLD', ERR = 100)
-open(unit=11, file = 'watershed_details.dat',	ACTION = 'READ', STATUS = 'OLD')
-open(unit=12, file = 'nflow_details.dat',		ACTION = 'READ', STATUS = 'OLD')
-open(unit=13, file = 'reservoir_details.dat',	ACTION = 'READ', STATUS = 'OLD')
-open(unit=14, file = 'user_details.dat',		ACTION = 'READ', STATUS = 'OLD')
-open(unit=15, file = 'node_details.dat',		ACTION = 'READ', STATUS = 'OLD')
-open(unit=16, file = 'dir_flow_details.dat',	ACTION = 'READ', STATUS = 'OLD')
-open(unit=17, file = 'ret_flow_details.dat',	ACTION = 'READ', STATUS = 'OLD')
-open(unit=18, file = 'diversions_details.dat',	ACTION = 'READ', STATUS = 'OLD')
-open(unit=19, file = 'spill_flow_details.dat',	ACTION = 'READ', STATUS = 'OLD')
-open(unit=20, file = 'ibasin_flow_details.dat',	ACTION = 'READ', STATUS = 'OLD')
-open(unit=21, file = 'demand_flow_details.dat',	ACTION = 'READ', STATUS = 'OLD')
-open(unit=22, file = 'sink_details.dat',		ACTION = 'READ', STATUS = 'OLD')
-open(unit=23, file = 'interbasin_details.dat',	ACTION = 'READ', STATUS = 'OLD')
+open(unit=10, file = 'input_data_files/input.dat',					ACTION = 'READ', STATUS = 'OLD', ERR = 100)
+open(unit=11, file = 'input_data_files/watershed_details.dat',		ACTION = 'READ', STATUS = 'OLD')
+open(unit=12, file = 'input_data_files/nflow_details.dat',			ACTION = 'READ', STATUS = 'OLD')
+open(unit=13, file = 'input_data_files/reservoir_details.dat',		ACTION = 'READ', STATUS = 'OLD')
+open(unit=14, file = 'input_data_files/user_details.dat',			ACTION = 'READ', STATUS = 'OLD')
+open(unit=15, file = 'input_data_files/node_details.dat',			ACTION = 'READ', STATUS = 'OLD')
+open(unit=16, file = 'input_data_files/dir_flow_details.dat',		ACTION = 'READ', STATUS = 'OLD')
+open(unit=17, file = 'input_data_files/ret_flow_details.dat',		ACTION = 'READ', STATUS = 'OLD')
+open(unit=18, file = 'input_data_files/diversions_details.dat',		ACTION = 'READ', STATUS = 'OLD')
+open(unit=19, file = 'input_data_files/spill_flow_details.dat',		ACTION = 'READ', STATUS = 'OLD')
+open(unit=20, file = 'input_data_files/ibasin_flow_details.dat',	ACTION = 'READ', STATUS = 'OLD')
+open(unit=21, file = 'input_data_files/demand_flow_details.dat',	ACTION = 'READ', STATUS = 'OLD')
+open(unit=22, file = 'input_data_files/sink_details.dat',			ACTION = 'READ', STATUS = 'OLD')
+open(unit=23, file = 'input_data_files/interbasin_details.dat',		ACTION = 'READ', STATUS = 'OLD')
 ! Opening output files for writing
-open(unit=31, file = 'storage.out')
-open(unit=32, file = 'hydro.out')
-open(unit=33, file = 'release.out')
-open(unit=34, file = 'flow_sets.out')
-open(unit=35, file = 'node_flow.out')
-open(unit=36, file = 'spill.out')
-open(unit=37, file = 'deficit.out')
+open(unit=31, file = 'output_files/storage.out')
+open(unit=32, file = 'output_files/hydro.out')
+open(unit=33, file = 'output_files/release.out')
+open(unit=34, file = 'output_files/flow_sets.out')
+open(unit=35, file = 'output_files/node_flow.out')
+open(unit=36, file = 'output_files/spill.out')
+open(unit=37, file = 'output_files/deficit.out')
 
 !  reading input.dat 
 read(10,*)ntime,nperiods,nensem
@@ -39,19 +40,28 @@ read(10,*)nwatershed,nnatural_flow,nres,nuser,nfnode,ndir_inflows,nret_inflows,n
 
 checksum = nwatershed+nnatural_flow+nres+nuser+nfnode+ndir_inflows+nret_inflows+ndiversion+nspill_flow+ninterbasin_flow+ndemand_release+nsink+ninterbasin
 
-! ntime = number of time steps
-! nres = number of reservoirs
-! nuser = number of water users in the entire system
-! nfnode = number of flow diversion/connection node
-! nsink = number of sink points or netowrks ends
-! nwatershed - NUmber of watershed originating natural flows
-! ndir_inflows - NUmber of Direct Inflows released from the reservoir
-! nret_flows = number of return flows (should not exceed nuser)
-! ndiversion = NUmber of diversions towards environmental protection
+! ntime = Number of time steps
+! nperiods = Number of times ntime will be repeated. Useful for multiyear runs at the monthly or season a scale.
+!* 	nperiods is only used when reading in data, it is provided for user convenience to prevent extremely
+!* 	long lines of data input (e.g. can stack inflow data in the file rather than providing it all on one line)
+!* 	Example: 
+!** 	run model for 4 years at monthly time steps. ntime = 12, nperiods = 4. 
+!**		everywhere a monthly value is provided (et depth, inflow, rule curves, etc)
+!** 	instead of providing 48 values on one line, provide 4 lines in succession
+!**  	of 12 values per line. 
+!* 	After input data is read, ntime will become ntime*nperiods and all output will be formatted as such
+! nres = Number of reservoirs
+! nuser = Number of water users in the entire system
+! nfnode = Number of flow diversion/connection node
+! nsink = Number of sink points or netowrks ends
+! nwatershed - Number of watershed originating natural flows
+! ndir_inflows - Number of Direct Inflows released from the reservoir
+! nret_flows = Number of return flows (should not exceed nuser)
+! ndiversion = Number of diversions towards environmental protection
 ! nspill_flow = Number of Spillways (should not exceed nres)
 ! nnatural_flow = Number of Natural flows from each watershed (should be equal to nwatershed)
-! ninterbasin_flow = NUmber of Inter basin transfer points
-! ndemand_release = NUmber of demand releases
+! ninterbasin_flow = Number of Inter basin transfer points
+! ndemand_release = Number of demand releases
 
 ! Allocate space for relevant data structures.
 
@@ -60,7 +70,7 @@ Allocate(my_user(nuser),my_reservoir(nres),my_node(nfnode),my_sink(nsink),my_wat
 Allocate(my_dir_inflows(ndir_inflows),my_ret_inflows(nret_inflows),my_diversions(ndiversion))
 
 Allocate(my_spill_flow(nspill_flow),my_natural_flow(nnatural_flow),my_interbasin_flow(ninterbasin_flow),&
-    &my_demand_release(ndemand_release))
+    	 my_demand_release(ndemand_release))
 
 ! Reads the system details from individual files until the connectivity given in input.dat comes to an end.
 icount = 0
@@ -76,7 +86,7 @@ DO WHILE (icount<icount_max)
 	if(itype.eq.2)call read_nflow_details(my_natural_flow,nnatural_flow)
 	if(itype.eq.3)call read_reservoir_details(my_reservoir,nres,ntime,nensem)
 	if(itype.eq.4)call read_user_details(my_user,nuser,ntime, nensem)
-  if(itype.eq.5)call read_node_details(my_node,nfnode)
+  	if(itype.eq.5)call read_node_details(my_node,nfnode)
 	if(itype.eq.6)call read_dir_inflows_details(my_dir_inflows,ndir_inflows)
 	if(itype.eq.7)call read_ret_inflows_details(my_ret_inflows,nret_inflows)
 	if(itype.eq.8)call read_diversions_details(my_diversions,ndiversion)
@@ -144,10 +154,10 @@ open(unit =40, file='model_para.dat',ACTION = 'READ', STATUS = 'OLD')
 read(40,*)nf,mode,iprint,miter
 read(40,*)bigbnd,eps,epseqn,udelta 
 ! model params to modify in the above file, if needed : 
-! nf : number of objective fucntions 
+! nf : Number of objective fucntions 
 ! mode : 110 [CBA - ref. ffsqp.f ] 
 !iprint : print level information 
-! miter : maximum number of iteration 
+! miter : maximum Number of iteration 
 ! bigbnd : plus infinity 
 ! eps : stopping criterion that ensures a solution, the norm of the Newton direction vector is smaller than eps 
 ! epseqn : tolerance of the violation of nonlinear equality constraints allowed by the user at an optimal solution 
@@ -157,15 +167,15 @@ close(40)
 end if 
 
 nres_level = my_reservoir(1)%nres_level
-! total number of constraints 
+! total Number of constraints 
 ncons = nuser + nres_level + nres  
 
 Allocate(cons_global(ncons),value_net(nensem))
 
-! The above line calculates the total number of constraints. It is better to represent equality constraint as inequality constraints
+! The above line calculates the total Number of constraints. It is better to represent equality constraint as inequality constraints
 ! It will ease the solver.
 ! nuser - represents reliability constraint for each user
-! nres_level - represents the total number of restricion level constraints
+! nres_level - represents the total Number of restricion level constraints
 ! nres - represents the end of the year storage constraints
 ! AT this point, rule curves are not incorporated as constraints. It could be modified if required.
 
@@ -178,13 +188,13 @@ Do i = 1,nwatershed
 
 end do
 if(runflag == 1) then
-! nineqn : number of nonlinear inequality constraints
+! nineqn : Number of nonlinear inequality constraints
 nineqn = ncons 
-! nineq  : number of inequality constraints     
+! nineq  : Number of inequality constraints     
 nineq = nineqn
-! neqn   : number of nonlinear equality constraints 
+! neqn   : Number of nonlinear equality constraints 
 neqn = 0
-! neq    : number of equality constraints 
+! neq    : Number of equality constraints 
 neq = 0
 ! working space dimension allocation for fsqp 
 iwsize = 6*nparam + 8*max(1,nineq+neq)+7*max(1,nf)+30
@@ -243,25 +253,25 @@ character*40  file_name
 
 TYPE(watershed) my_watershed(nwatershed)
 
-read(11,*)inum
+read(11,*)iNum
 
-read(11,20)my_watershed(inum)%name
+read(11,20)my_watershed(iNum)%name
 
-read(11,*)my_watershed(inum)%ID, nchild,my_watershed(inum)%drainage_area
+read(11,*)my_watershed(iNum)%ID, nchild,my_watershed(iNum)%drainage_area
 
-my_watershed(inum)%nchild = nchild
+my_watershed(iNum)%nchild = nchild
 
-Allocate(my_watershed(inum)%child_id(nchild))
-Allocate(my_watershed(inum)%child_type(nchild))
+Allocate(my_watershed(iNum)%child_id(nchild))
+Allocate(my_watershed(iNum)%child_type(nchild))
 
 
 Do i = 1,nchild
 	
-	read(11,*)my_watershed(inum)%child_type(i),my_watershed(inum)%child_id(i)
+	read(11,*)my_watershed(iNum)%child_type(i),my_watershed(iNum)%child_id(i)
 
 END DO
 
-Allocate(my_watershed(inum)%natural_inflows(ntime, nensem))
+Allocate(my_watershed(iNum)%natural_inflows(ntime, nensem))
 
 read(11,*)file_name
 
@@ -270,7 +280,7 @@ open(unit=40,file=trim(file_name))
 
 Do k = 1,nensem
                 
-		read(40,*)(my_watershed(inum)%natural_inflows(j,k), j=1,ntime)
+		read(40,*)(my_watershed(iNum)%natural_inflows(j,k), j=1,ntime)
 
 
 END DO
@@ -281,7 +291,7 @@ close(40)
 
 !	DO j = 1,ntime
       
-!	  t1 = my_watershed(inum)%natural_inflows(j,k)
+!	  t1 = my_watershed(iNum)%natural_inflows(j,k)
 
 !      if(j.eq.1.or.j.eq.2.or.j.eq.4.or.j.eq.6.or.j.eq.7.or.j.eq.9.or.j.eq.11)days = 31
 
@@ -290,7 +300,7 @@ close(40)
 !      if(j.eq.8)days = 28
 !		t1 = t1*days*24*3600/(10**6)
 
-!		my_watershed(inum)%natural_inflows(j,k) = t1
+!		my_watershed(iNum)%natural_inflows(j,k) = t1
 
 !	end do
 
@@ -310,15 +320,15 @@ implicit doubleprecision(a-h,o-z)
 
 TYPE(Natural_flow) my_natural_flow(nnatural_flow)
 
-read(12,*)inum
+read(12,*)iNum
 
-read(12,20)my_natural_flow(inum)%name
+read(12,20)my_natural_flow(iNum)%name
 
-read(12,*)my_natural_flow(inum)%start_type, my_natural_flow(inum)%start_id
-read(12,*)my_natural_flow(inum)%end_type, my_natural_flow(inum)%end_id
+read(12,*)my_natural_flow(iNum)%start_type, my_natural_flow(iNum)%start_id
+read(12,*)my_natural_flow(iNum)%end_type, my_natural_flow(iNum)%end_id
 
 
-read(12,*)my_natural_flow(inum)%minimum_discharge, my_natural_flow(inum)%maximum_discharge
+read(12,*)my_natural_flow(iNum)%minimum_discharge, my_natural_flow(iNum)%maximum_discharge
 
 20 FORMAT(A40)
 
@@ -333,74 +343,74 @@ implicit doubleprecision(a-h,o-z)
 
 TYPE(Reservoir) my_reservoir(nres)
 
-read(13,*)inum
+read(13,*)iNum
 
-read(13,20)my_reservoir(inum)%name 
-read(13,*)my_reservoir(inum)%latitude, my_reservoir(inum)%longitude
-print *, my_reservoir(inum)%name
-read(13,*)my_reservoir(inum)%elevation_max, my_reservoir(inum)%elevation_min 
-read(13,*)my_reservoir(inum)%storage_max, my_reservoir(inum)%storage_min, my_reservoir(inum)%current_storage
-read(13,*)my_reservoir(inum)%elevation_storage_coeff(1),my_reservoir(inum)%elevation_storage_coeff(2) &
-		,my_reservoir(inum)%elevation_storage_coeff(3)
-read(13,*)my_reservoir(inum)%storage_area_coeff(1),my_reservoir(inum)%storage_area_coeff(2)
+read(13,20)my_reservoir(iNum)%name 
+read(13,*)my_reservoir(iNum)%latitude, my_reservoir(iNum)%longitude
+print *, my_reservoir(iNum)%name
+read(13,*)my_reservoir(iNum)%elevation_max, my_reservoir(iNum)%elevation_min 
+read(13,*)my_reservoir(iNum)%storage_max, my_reservoir(iNum)%storage_min, my_reservoir(iNum)%current_storage
+read(13,*)my_reservoir(iNum)%elevation_storage_coeff(1),my_reservoir(iNum)%elevation_storage_coeff(2) &
+		,my_reservoir(iNum)%elevation_storage_coeff(3)
+read(13,*)my_reservoir(iNum)%storage_area_coeff(1),my_reservoir(iNum)%storage_area_coeff(2)
 
-read(13,*)my_reservoir(inum)%nspillway,my_reservoir(inum)%number_outlets
-read(13,*)my_reservoir(inum)%nres_level
-read(13,*)my_reservoir(inum)%nchild,my_reservoir(inum)%nparent
+read(13,*)my_reservoir(iNum)%nspillway,my_reservoir(iNum)%Number_outlets
+read(13,*)my_reservoir(iNum)%nres_level
+read(13,*)my_reservoir(iNum)%nchild,my_reservoir(iNum)%nparent
 
-n1 = my_reservoir(inum)%nchild
-n2 = my_reservoir(inum)%nparent
-n4 = my_reservoir(inum)%nspillway
+n1 = my_reservoir(iNum)%nchild
+n2 = my_reservoir(iNum)%nparent
+n4 = my_reservoir(iNum)%nspillway
 
-Allocate(my_reservoir(inum)%child_id(n1),my_reservoir(inum)%child_type(n1))
-Allocate(my_reservoir(inum)%parent_id(n2),my_reservoir(inum)%parent_type(n2))
-Allocate(my_reservoir(inum)%spill_type(n4),my_reservoir(inum)%crest_level(n4),my_reservoir(inum)%discharge_max(n4))
+Allocate(my_reservoir(iNum)%child_id(n1),my_reservoir(iNum)%child_type(n1))
+Allocate(my_reservoir(iNum)%parent_id(n2),my_reservoir(iNum)%parent_type(n2))
+Allocate(my_reservoir(iNum)%spill_type(n4),my_reservoir(iNum)%crest_level(n4),my_reservoir(iNum)%discharge_max(n4))
 
 Do i = 1,n4
 
-	read(13,*)my_reservoir(inum)%spill_type(i),my_reservoir(inum)%crest_level(i), my_reservoir(inum)%discharge_max(i)
+	read(13,*)my_reservoir(iNum)%spill_type(i),my_reservoir(iNum)%crest_level(i), my_reservoir(iNum)%discharge_max(i)
 
 End do
 
-Do i = 1,my_reservoir(inum)%nchild
+Do i = 1,my_reservoir(iNum)%nchild
 
-	read(13,*)my_reservoir(inum)%child_type(i), my_reservoir(inum)%child_id(i)
-
-end do
-
-Do i = 1,my_reservoir(inum)%nparent
-
-	read(13,*)my_reservoir(inum)%parent_type(i), my_reservoir(inum)%parent_id(i)
+	read(13,*)my_reservoir(iNum)%child_type(i), my_reservoir(iNum)%child_id(i)
 
 end do
 
-n3 = my_reservoir(inum)%number_outlets
+Do i = 1,my_reservoir(iNum)%nparent
 
-Allocate(my_reservoir(inum)%elevation_rvalve(n3),my_reservoir(inum)%area_rvalve(n3))
-Allocate(my_reservoir(inum)%loss_coeff_max(n3),my_reservoir(inum)%loss_coeff_min(n3))
+	read(13,*)my_reservoir(iNum)%parent_type(i), my_reservoir(iNum)%parent_id(i)
+
+end do
+
+n3 = my_reservoir(iNum)%Number_outlets
+
+Allocate(my_reservoir(iNum)%elevation_rvalve(n3),my_reservoir(iNum)%area_rvalve(n3))
+Allocate(my_reservoir(iNum)%loss_coeff_max(n3),my_reservoir(iNum)%loss_coeff_min(n3))
 
 Do i = 1, n3
 
 	read(13,*)t1,t2,t3,t4,t5,t6
-	my_reservoir(inum)%elevation_rvalve(i) = t1
-	my_reservoir(inum)%area_rvalve(i)	   = t2
-	my_reservoir(inum)%loss_coeff_max(i)   = t3
-	my_reservoir(inum)%loss_coeff_max(i)   = t4
-	my_reservoir(inum)%target_storage      = t5
-	my_reservoir(inum)%storage_prob        = t6
+	my_reservoir(iNum)%elevation_rvalve(i) = t1
+	my_reservoir(iNum)%area_rvalve(i)	   = t2
+	my_reservoir(iNum)%loss_coeff_max(i)   = t3
+	my_reservoir(iNum)%loss_coeff_max(i)   = t4
+	my_reservoir(iNum)%target_storage      = t5
+	my_reservoir(iNum)%storage_prob        = t6
 
 End do
 
-Allocate(my_reservoir(inum)%rule_curve(ntime),my_reservoir(inum)%evaporation_rate(ntime))
+Allocate(my_reservoir(iNum)%rule_curve(ntime),my_reservoir(iNum)%evaporation_rate(ntime))
 
-read(13,*)(my_reservoir(inum)%rule_curve(i),i=1,ntime)
-read(13,*)(my_reservoir(inum)%evaporation_rate(i),i=1,ntime)
+read(13,*)(my_reservoir(iNum)%rule_curve(i),i=1,ntime)
+read(13,*)(my_reservoir(iNum)%evaporation_rate(i),i=1,ntime)
 
-n4 = my_reservoir(inum)%nres_level
+n4 = my_reservoir(iNum)%nres_level
 
-Allocate(my_reservoir(inum)%tar_restr_prob(n4))
+Allocate(my_reservoir(iNum)%tar_restr_prob(n4))
 	
-read(13,*)(my_reservoir(inum)%tar_restr_prob(i),i=1,n4)
+read(13,*)(my_reservoir(iNum)%tar_restr_prob(i),i=1,n4)
 
 
 
@@ -418,62 +428,62 @@ implicit doubleprecision(a-h,o-z)
 
 TYPE(User) my_user(nuser)
 
-read(14,*)inum
+read(14,*)iNum
 
-read(14,20)my_user(inum)%name
+read(14,20)my_user(iNum)%name
 
-read(14,*)my_user(inum)%id, my_user(inum)%user_type,my_user(inum)%nchild, my_user(inum)%nparent,my_user(inum)%nres_level
+read(14,*)my_user(iNum)%id, my_user(iNum)%user_type,my_user(iNum)%nchild, my_user(iNum)%nparent,my_user(iNum)%nres_level
 
-n1 = my_user(inum)%nchild
-n2 = my_user(inum)%nparent
-nres_level = my_user(inum)%nres_level
+n1 = my_user(iNum)%nchild
+n2 = my_user(iNum)%nparent
+nres_level = my_user(iNum)%nres_level
 
 
-Allocate(my_user(inum)%child_id(n1),my_user(inum)%child_type(n1))
-Allocate(my_user(inum)%parent_id(n2),my_user(inum)%parent_type(n2))
-Allocate(my_user(inum)%demand_fract(ntime), my_user(inum)%restr_fract(nres_level), my_user(inum)%res_compensation(nres_level))
+Allocate(my_user(iNum)%child_id(n1),my_user(iNum)%child_type(n1))
+Allocate(my_user(iNum)%parent_id(n2),my_user(iNum)%parent_type(n2))
+Allocate(my_user(iNum)%demand_fract(ntime), my_user(iNum)%restr_fract(nres_level), my_user(iNum)%res_compensation(nres_level))
 
-Do i = 1,my_user(inum)%nchild
+Do i = 1,my_user(iNum)%nchild
 
-	read(14,*)my_user(inum)%child_type(i), my_user(inum)%child_id(i)
+	read(14,*)my_user(iNum)%child_type(i), my_user(iNum)%child_id(i)
 
 end do
 
-Do i = 1,my_user(inum)%nparent
+Do i = 1,my_user(iNum)%nparent
 
-	read(14,*)my_user(inum)%parent_type(i), my_user(inum)%parent_id(i)
+	read(14,*)my_user(iNum)%parent_type(i), my_user(iNum)%parent_id(i)
 
 end do
 
 	read(14,*)t1,t2,t3,t4,t5,t6,t7
 
-	my_user(inum)%failure_prob      = (1-t1)
-	my_user(inum)%con_res_vol	   = t2
-	my_user(inum)%tariff           = t3
-	my_user(inum)%penalty		   = t4
-	my_user(inum)%minimum_release = t5
-	my_user(inum)%maximum_release = t6
-	my_user(inum)%penalty_compen  = t7
-	read(14,*)(my_user(inum)%demand_fract(i), i=1,ntime)
-	read(14,*)(my_user(inum)%restr_fract(i), i=1,nres_level)
-	read(14,*)(my_user(inum)%res_compensation(i), i=1,nres_level)
+	my_user(iNum)%failure_prob      = (1-t1)
+	my_user(iNum)%con_res_vol	   = t2
+	my_user(iNum)%tariff           = t3
+	my_user(iNum)%penalty		   = t4
+	my_user(iNum)%minimum_release = t5
+	my_user(iNum)%maximum_release = t6
+	my_user(iNum)%penalty_compen  = t7
+	read(14,*)(my_user(iNum)%demand_fract(i), i=1,ntime)
+	read(14,*)(my_user(iNum)%restr_fract(i), i=1,nres_level)
+	read(14,*)(my_user(iNum)%res_compensation(i), i=1,nres_level)
 	
-if(my_user(inum)%user_type.eq.4)then
+if(my_user(iNum)%user_type.eq.4)then
 
 	read(14,*)t1,t2,t3,t4,t5,t6
 
-	my_user(inum)%max_discharge = t1
-	my_user(inum)%installed_capacity = t2
-	my_user(inum)%generator_efficiency = t3
-	my_user(inum)%storage_energy_coeff(1) = t4
-	my_user(inum)%storage_energy_coeff(2) = t5
-	my_user(inum)%unit_rate_energy = t6
+	my_user(iNum)%max_discharge = t1
+	my_user(iNum)%installed_capacity = t2
+	my_user(iNum)%generator_efficiency = t3
+	my_user(iNum)%storage_energy_coeff(1) = t4
+	my_user(iNum)%storage_energy_coeff(2) = t5
+	my_user(iNum)%unit_rate_energy = t6
 
 
-        Allocate(my_user(inum)%tail_elevation(ntime))
+        Allocate(my_user(iNum)%tail_elevation(ntime))
 !        Do k = 1,nensem
                 
-!        		read(14,*)(my_user(inum)%tail_elevation(j1), j1=1,ntime)
+!        		read(14,*)(my_user(iNum)%tail_elevation(j1), j1=1,ntime)
 !        END DO
 
 
@@ -481,11 +491,11 @@ end if
 
 read(14,*)nlags
 
-my_user(inum)%nlags = nlags
+my_user(iNum)%nlags = nlags
 
-Allocate(my_user(inum)%ffraction(nlags))
+Allocate(my_user(iNum)%ffraction(nlags))
 
-read(14,*)(my_user(inum)%ffraction(i),i=1,nlags)
+read(14,*)(my_user(iNum)%ffraction(i),i=1,nlags)
 
 
 20 FORMAT(A40)
@@ -501,28 +511,28 @@ implicit doubleprecision(a-h,o-z)
 
 TYPE(flow_join_node) my_node(nfnode)
 
-read(15,*)inum
+read(15,*)iNum
 
-read(15,20)my_node(inum)%name
+read(15,20)my_node(iNum)%name
 
-read(15,*)my_node(inum)%id, my_node(inum)%nchild, my_node(inum)%nparent
+read(15,*)my_node(iNum)%id, my_node(iNum)%nchild, my_node(iNum)%nparent
 
-n1 = my_node(inum)%nchild
-n2 = my_node(inum)%nparent
+n1 = my_node(iNum)%nchild
+n2 = my_node(iNum)%nparent
 
 
-Allocate(my_node(inum)%child_id(n1),my_node(inum)%child_type(n1))
-Allocate(my_node(inum)%parent_id(n2),my_node(inum)%parent_type(n2))
+Allocate(my_node(iNum)%child_id(n1),my_node(iNum)%child_type(n1))
+Allocate(my_node(iNum)%parent_id(n2),my_node(iNum)%parent_type(n2))
 
-Do i = 1,my_node(inum)%nchild
+Do i = 1,my_node(iNum)%nchild
 
-	read(15,*)my_node(inum)%child_type(i), my_node(inum)%child_id(i)
+	read(15,*)my_node(iNum)%child_type(i), my_node(iNum)%child_id(i)
 
 end do
 
-Do i = 1,my_node(inum)%nparent
+Do i = 1,my_node(iNum)%nparent
 
-	read(15,*)my_node(inum)%parent_type(i), my_node(inum)%parent_id(i)
+	read(15,*)my_node(iNum)%parent_type(i), my_node(iNum)%parent_id(i)
 
 end do
 
@@ -538,14 +548,14 @@ implicit doubleprecision(a-h,o-z)
 
 TYPE(direct_inflows) my_dir_inflows(ndir_inflows)
 
-read(16,*)inum
+read(16,*)iNum
 
-read(16,20)my_dir_inflows(inum)%name
+read(16,20)my_dir_inflows(iNum)%name
 
-read(16,*)my_dir_inflows(inum)%start_type, my_dir_inflows(inum)%start_id
-read(16,*)my_dir_inflows(inum)%end_type, my_dir_inflows(inum)%end_id
+read(16,*)my_dir_inflows(iNum)%start_type, my_dir_inflows(iNum)%start_id
+read(16,*)my_dir_inflows(iNum)%end_type, my_dir_inflows(iNum)%end_id
 
-read(16,*)my_dir_inflows(inum)%minimum_discharge, my_dir_inflows(inum)%maximum_discharge
+read(16,*)my_dir_inflows(iNum)%minimum_discharge, my_dir_inflows(iNum)%maximum_discharge
 
 20 FORMAT(A40)
 
@@ -560,14 +570,14 @@ implicit doubleprecision(a-h,o-z)
 
 TYPE(return_inflows) my_ret_inflows(nret_inflows)
 
-read(17,*)inum
+read(17,*)iNum
 
-read(17,20)my_ret_inflows(inum)%name
+read(17,20)my_ret_inflows(iNum)%name
 
-read(17,*)my_ret_inflows(inum)%start_type, my_ret_inflows(inum)%start_id
-read(17,*)my_ret_inflows(inum)%end_type, my_ret_inflows(inum)%end_id
+read(17,*)my_ret_inflows(iNum)%start_type, my_ret_inflows(iNum)%start_id
+read(17,*)my_ret_inflows(iNum)%end_type, my_ret_inflows(iNum)%end_id
 
-read(17,*)my_ret_inflows(inum)%minimum_discharge, my_ret_inflows(inum)%maximum_discharge
+read(17,*)my_ret_inflows(iNum)%minimum_discharge, my_ret_inflows(iNum)%maximum_discharge
 
 
 20 FORMAT(A40)
@@ -583,14 +593,14 @@ implicit doubleprecision(a-h,o-z)
 
 TYPE(diversion) my_diversions(ndiversion)
 
-read(18,*)inum
+read(18,*)iNum
 
-read(18,20)my_diversions(inum)%name
+read(18,20)my_diversions(iNum)%name
 
-read(18,*)my_diversions(inum)%start_type, my_diversions(inum)%start_id
-read(18,*)my_diversions(inum)%end_type, my_diversions(inum)%end_id
+read(18,*)my_diversions(iNum)%start_type, my_diversions(iNum)%start_id
+read(18,*)my_diversions(iNum)%end_type, my_diversions(iNum)%end_id
 
-read(18,*)my_diversions(inum)%minimum_discharge, my_diversions(inum)%maximum_discharge
+read(18,*)my_diversions(iNum)%minimum_discharge, my_diversions(iNum)%maximum_discharge
 
 20 FORMAT(A40)
 
@@ -605,14 +615,14 @@ implicit doubleprecision(a-h,o-z)
 
 TYPE(Spill_flow) my_spill_flow(nspillflow)
 
-read(19,*)inum
+read(19,*)iNum
 
-read(19,20)my_spill_flow(inum)%name
+read(19,20)my_spill_flow(iNum)%name
 
-read(19,*)my_spill_flow(inum)%start_type, my_spill_flow(inum)%start_id
-read(19,*)my_spill_flow(inum)%end_type, my_spill_flow(inum)%end_id
+read(19,*)my_spill_flow(iNum)%start_type, my_spill_flow(iNum)%start_id
+read(19,*)my_spill_flow(iNum)%end_type, my_spill_flow(iNum)%end_id
 
-read(19,*)my_spill_flow(inum)%minimum_discharge, my_spill_flow(inum)%maximum_discharge
+read(19,*)my_spill_flow(iNum)%minimum_discharge, my_spill_flow(iNum)%maximum_discharge
 
 20 FORMAT(A40)
 
@@ -627,14 +637,14 @@ implicit doubleprecision(a-h,o-z)
 
 TYPE(Interbasin_flow) my_interbasin_flow(ninterbasin_flow)
 
-read(20,*)inum
+read(20,*)iNum
 
-read(20,20)my_interbasin_flow(inum)%name
+read(20,20)my_interbasin_flow(iNum)%name
 
-read(20,*)my_interbasin_flow(inum)%start_type, my_interbasin_flow(inum)%start_id
-read(20,*)my_interbasin_flow(inum)%end_type, my_interbasin_flow(inum)%end_id
+read(20,*)my_interbasin_flow(iNum)%start_type, my_interbasin_flow(iNum)%start_id
+read(20,*)my_interbasin_flow(iNum)%end_type, my_interbasin_flow(iNum)%end_id
 
-read(20,*)my_interbasin_flow(inum)%minimum_discharge, my_interbasin_flow(inum)%maximum_discharge
+read(20,*)my_interbasin_flow(iNum)%minimum_discharge, my_interbasin_flow(iNum)%maximum_discharge
 
 20 FORMAT(A40)
 
@@ -649,14 +659,14 @@ implicit doubleprecision(a-h,o-z)
 
 TYPE(demand_release) my_demand_release(ndemand_release)
 
-read(21,*)inum
+read(21,*)iNum
 
-read(21,20)my_demand_release(inum)%name
+read(21,20)my_demand_release(iNum)%name
 
-read(21,*)my_demand_release(inum)%start_type, my_demand_release(inum)%start_id
-read(21,*)my_demand_release(inum)%end_type, my_demand_release(inum)%end_id
+read(21,*)my_demand_release(iNum)%start_type, my_demand_release(iNum)%start_id
+read(21,*)my_demand_release(iNum)%end_type, my_demand_release(iNum)%end_id
 
-read(21,*)my_demand_release(inum)%minimum_discharge, my_demand_release(inum)%maximum_discharge
+read(21,*)my_demand_release(iNum)%minimum_discharge, my_demand_release(iNum)%maximum_discharge
 
 20 FORMAT(A40)
 
@@ -674,24 +684,24 @@ implicit doubleprecision(a-h,o-z)
 
 TYPE(sink) my_sink(nsink)
 
-read(22,*)inum
+read(22,*)iNum
 
-read(22,*)my_sink(inum)%name
+read(22,*)my_sink(iNum)%name
 
-read(22,*)my_sink(inum)%id, my_sink(inum)%nparent
+read(22,*)my_sink(iNum)%id, my_sink(iNum)%nparent
 
-n2 = my_sink(inum)%nparent
+n2 = my_sink(iNum)%nparent
 
 
-Allocate(my_sink(inum)%parent_id(n2),my_sink(inum)%parent_type(n2))
+Allocate(my_sink(iNum)%parent_id(n2),my_sink(iNum)%parent_type(n2))
 
-Do i = 1,my_sink(inum)%nparent
+Do i = 1,my_sink(iNum)%nparent
 
-	read(22,*)my_sink(inum)%parent_type(i), my_sink(inum)%parent_id(i)
+	read(22,*)my_sink(iNum)%parent_type(i), my_sink(iNum)%parent_id(i)
 
 end do
 
-read(22,*)my_sink(inum)%max_storage
+read(22,*)my_sink(iNum)%max_storage
 
 RETURN
 
@@ -703,32 +713,32 @@ implicit doubleprecision(a-h,o-z)
 
 TYPE(interbasin) my_interbasin(ninterbasin)
 
-read(23,*)inum
+read(23,*)iNum
 
-read(23,20)my_interbasin(inum)%name
-read(23,*) my_interbasin(inum)%drainage_area
+read(23,20)my_interbasin(iNum)%name
+read(23,*) my_interbasin(iNum)%drainage_area
 
-read(23,*)my_interbasin(inum)%id, my_interbasin(inum)%nchild
+read(23,*)my_interbasin(iNum)%id, my_interbasin(iNum)%nchild
 
-n1 = my_interbasin(inum)%nchild
+n1 = my_interbasin(iNum)%nchild
 
 
-Allocate(my_interbasin(inum)%child_id(n1),my_interbasin(inum)%child_type(n1))
+Allocate(my_interbasin(iNum)%child_id(n1),my_interbasin(iNum)%child_type(n1))
 
-Do i = 1,my_interbasin(inum)%nchild
+Do i = 1,my_interbasin(iNum)%nchild
 
-	read(23,*)my_interbasin(inum)%child_type(i), my_interbasin(inum)%child_id(i)
+	read(23,*)my_interbasin(iNum)%child_type(i), my_interbasin(iNum)%child_id(i)
 
 end do
 
-Allocate(my_interbasin(inum)%average_flow(ntime))
+Allocate(my_interbasin(iNum)%average_flow(ntime))
 
-read(23,*)(my_interbasin(inum)%average_flow(j), j=1,ntime)
+read(23,*)(my_interbasin(iNum)%average_flow(j), j=1,ntime)
 
 ! outdated conversion
 !Do j = 1,ntime
 
-!	  t1 = my_interbasin(inum)%average_flow(j)
+!	  t1 = my_interbasin(iNum)%average_flow(j)
 
 !      if(j.eq.1.or.j.eq.2.or.j.eq.4.or.j.eq.6.or.j.eq.7.or.j.eq.9.or.j.eq.11)days = 31
 
@@ -738,7 +748,7 @@ read(23,*)(my_interbasin(inum)%average_flow(j), j=1,ntime)
 
 !		t1 = t1*days*24*3600/(10**6)
 
-!		my_interbasin(inum)%average_flow(j) = t1
+!		my_interbasin(iNum)%average_flow(j) = t1
 
 !end do
 
