@@ -34,7 +34,7 @@ open(unit=36, file = 'spill.out')
 open(unit=37, file = 'deficit.out')
 
 !  reading input.dat 
-read(10,*)ntime,nensem
+read(10,*)ntime,nperiods,nensem
 read(10,*)nwatershed,nnatural_flow,nres,nuser,nfnode,ndir_inflows,nret_inflows,ndiversion,nspill_flow,ninterbasin_flow,ndemand_release,nsink,ninterbasin
 
 checksum = nwatershed+nnatural_flow+nres+nuser+nfnode+ndir_inflows+nret_inflows+ndiversion+nspill_flow+ninterbasin_flow+ndemand_release+nsink+ninterbasin
