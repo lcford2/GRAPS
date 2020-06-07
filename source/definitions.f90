@@ -19,11 +19,9 @@
 
 		double precision max_discharge,installed_capacity,generator_efficiency,storage_energy_coeff(2)
 		double precision unit_rate_energy
-                double precision, allocatable :: tail_elevation(:)
+        double precision, allocatable :: tail_elevation(:)
 
-
-
-   END TYPE User
+	END TYPE User
 
 	TYPE Reservoir
 
@@ -46,11 +44,10 @@
 		double precision current_storage, target_storage, storage_prob
 		double precision, allocatable ::  rule_curve(:),evaporation_rate(:)
 		double precision, allocatable :: tar_restr_prob(:),restr_fraction(:),crest_level(:),discharge_max(:)
-		
 
 	END TYPE Reservoir
 
-   TYPE Flow_join_node
+   	TYPE Flow_join_node
 
 		Character*40 Name
 		Integer  nuser
@@ -58,10 +55,9 @@
 		Integer, allocatable ::  parent_id(:),child_id(:)
 		Integer, allocatable ::  parent_type(:),child_type(:)
 
-  END TYPE Flow_join_node
+  	END TYPE Flow_join_node
 
-
-TYPE Sink
+	TYPE Sink
 
 		Character*40 Name
 		Integer   ID,nparent
@@ -71,135 +67,127 @@ TYPE Sink
 
 		double precision max_storage
 
+	END TYPE Sink
 
-END TYPE Sink
+	TYPE Watershed
 
+		Character*40 Name
+		Integer   ID,nchild
 
-TYPE Watershed
+		Integer, allocatable ::  child_id(:)
+		Integer, allocatable ::  child_type(:)
 
-	Character*40 Name
-	Integer   ID,nchild
+		double precision drainage_area
+		double precision, allocatable :: natural_inflows(:,:)
 
-	Integer, allocatable ::  child_id(:)
-	Integer, allocatable ::  child_type(:)
+	END TYPE Watershed
 
-	double precision drainage_area
-	double precision, allocatable :: natural_inflows(:,:)
+	TYPE Interbasin
 
-END TYPE Watershed
+		Character*40 Name
+		Integer   ID,nchild
 
-TYPE Interbasin
+		Integer, allocatable ::  child_id(:)
+		Integer, allocatable ::  child_type(:)
 
-	Character*40 Name
-	Integer   ID,nchild
+		double precision drainage_area
+		double precision, allocatable :: average_flow(:)
 
-	Integer, allocatable ::  child_id(:)
-	Integer, allocatable ::  child_type(:)
-
-	double precision drainage_area
-	double precision, allocatable :: average_flow(:)
-
-
-END TYPE Interbasin
-
+	END TYPE Interbasin
 
 !   Declarion of Flow Connectors
 
-TYPE direct_inflows
+	TYPE direct_inflows
 
-	Character*40 Name
-	Integer start_id, end_id
-	Integer start_type, end_type
+		Character*40 Name
+		Integer start_id, end_id
+		Integer start_type, end_type
 
-	double precision minimum_discharge, maximum_discharge,loss_factor
+		double precision minimum_discharge, maximum_discharge,loss_factor
 
-END TYPE direct_inflows
+	END TYPE direct_inflows
 
-TYPE Diversion
+	TYPE Diversion
 
-	Character*40 Name
-	Integer start_id, end_id
-	Integer start_type, end_type
+		Character*40 Name
+		Integer start_id, end_id
+		Integer start_type, end_type
 
-	double precision minimum_discharge, maximum_discharge,loss_factor
+		double precision minimum_discharge, maximum_discharge,loss_factor
 
-END TYPE Diversion
+	END TYPE Diversion
 
-TYPE passage_flow
+	TYPE passage_flow
 
-	Character*40 Name
-	Integer start_id, end_id
-	Integer start_type, end_type
+		Character*40 Name
+		Integer start_id, end_id
+		Integer start_type, end_type
 
-	double precision minimum_discharge, maximum_discharge,loss_factor
+		double precision minimum_discharge, maximum_discharge,loss_factor
 
-END TYPE passage_flow
+	END TYPE passage_flow
 
+	TYPE return_inflows
 
-TYPE return_inflows
+		Character*40 Name
+		Integer start_id, end_id
+		Integer start_type, end_type
 
-	Character*40 Name
-	Integer start_id, end_id
-	Integer start_type, end_type
+		double precision minimum_discharge, maximum_discharge,loss_factor
 
-	double precision minimum_discharge, maximum_discharge,loss_factor
+	END TYPE return_inflows
 
-END TYPE return_inflows
+	TYPE demand_release
 
+		Character*40 Name
+		Integer start_id, end_id
+		Integer start_type, end_type
 
-TYPE demand_release
+		double precision minimum_discharge, maximum_discharge,loss_factor
 
-	Character*40 Name
-	Integer start_id, end_id
-	Integer start_type, end_type
+	END TYPE demand_release
 
-	double precision minimum_discharge, maximum_discharge,loss_factor
+	TYPE Interbasin_flow
 
-END TYPE demand_release
+		Character*40 Name
+		Integer start_id, end_id
+		Integer start_type, end_type
 
+		double precision minimum_discharge, maximum_discharge,loss_factor
 
+	END TYPE Interbasin_flow
 
-TYPE Interbasin_flow
+	TYPE Natural_flow
 
-	Character*40 Name
-	Integer start_id, end_id
-	Integer start_type, end_type
+		Character*40 Name
+		Integer start_id, end_id
+		Integer start_type, end_type
 
-	double precision minimum_discharge, maximum_discharge,loss_factor
+		double precision minimum_discharge, maximum_discharge,loss_factor
 
-END TYPE Interbasin_flow
+	END TYPE Natural_flow
 
-TYPE Natural_flow
+	TYPE Spill_flow
 
-	Character*40 Name
-	Integer start_id, end_id
-	Integer start_type, end_type
+		Character*40 Name
+		Integer start_id, end_id
+		Integer start_type, end_type
 
-	double precision minimum_discharge, maximum_discharge,loss_factor
+		double precision minimum_discharge, maximum_discharge,loss_factor
 
-END TYPE Natural_flow
+	END TYPE Spill_flow
 
-TYPE Spill_flow
+	TYPE ordered_network
 
-	Character*40 Name
-	Integer start_id, end_id
-	Integer start_type, end_type
+		Integer order_id, order_type
 
-	double precision minimum_discharge, maximum_discharge,loss_factor
+	END TYPE ordered_network
 
-END TYPE Spill_flow
+	TYPE flow_definitions
 
-TYPE ordered_network
+		doubleprecision, allocatable :: controlled_flows(:)
+		doubleprecision, allocatable :: uncontrolled_flows(:,:)
 
-	Integer order_id, order_type
-
-END TYPE ordered_network
-
-TYPE flow_definitions
-
-	doubleprecision, allocatable :: controlled_flows(:)
-	doubleprecision, allocatable :: uncontrolled_flows(:,:)
-
-END TYPE flow_definitions
+	END TYPE flow_definitions
 
 END MODULE Definitions
