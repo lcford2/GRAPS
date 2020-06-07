@@ -312,9 +312,9 @@ do i = 1,nensem
 		! Unit 28 is file for calculated releases from reservoirs
     write(31,15) my_reservoir(icurrent_id)%name, (simul_stor(j), j=1,ntime)        
 			15 format(a,2x, <ntime>(2x,F8.3))
-		write(28,15) my_reservoir(icurrent_id)%name, (act_release(j), j=1,ntime)
-		write(44,15) my_reservoir(icurrent_id)%name, (simul_deficit(j), j=1,ntime)
-		write(30,15) my_reservoir(icurrent_id)%name, (simul_spill(j), j=1, ntime)
+		write(34,15) my_reservoir(icurrent_id)%name, (act_release(j), j=1,ntime)
+		write(37,15) my_reservoir(icurrent_id)%name, (simul_deficit(j), j=1,ntime)
+		write(36,15) my_reservoir(icurrent_id)%name, (simul_spill(j), j=1, ntime)
 		if (nensem.eq.1)  then
 			print *, my_reservoir(icurrent_id)%name, 'Final Storage:',simul_stor(12)
 			print *, my_reservoir(icurrent_id)%name, 'Total Spill:', sum(simul_spill)
@@ -451,7 +451,7 @@ double precision Unit_Conv
             itemp = 2010 + j !Index the time periods for creating the Temoa information below
             !Printing to file the Maximum hydropower for each month to be used by Temoa
 
-            !write (54,18),itemp,my_user(icurrent_id)%name,simul_hydropower(j)        
+            !write (32,18),itemp,my_user(icurrent_id)%name,simul_hydropower(j)        
             stor_uni = simul_stor(j)
         END do
         
@@ -463,7 +463,7 @@ double precision Unit_Conv
 !        END do
    if (ifinal.eq.1) then 
 !      print *, 'Writing hydro..................' 
-       write(54,19) my_user(icurrent_id)%name, (simul_hydropower(j), j=1,ntime) 
+       write(32,19) my_user(icurrent_id)%name, (simul_hydropower(j), j=1,ntime) 
           !18 format (i4,2x,a,f16.10)
         19 format(a,2x, <ntime>(2x,F10.3))
         end if 
@@ -574,8 +574,8 @@ end do
 		  (iparent_type,iparent_id, decision_var,nparam)
 
 	end do
-!write(28, *) iflow_set, (my_flow_set(iflow_set)%controlled_flows(i), i=1,ntime)
-!write(28, *) iflow_set, ((my_flow_set(iflow_set)%uncontrolled_flows(i,j), i=1,ntime), j=1,nensem)
+!write(34, *) iflow_set, (my_flow_set(iflow_set)%controlled_flows(i), i=1,ntime)
+!write(34, *) iflow_set, ((my_flow_set(iflow_set)%uncontrolled_flows(i,j), i=1,ntime), j=1,nensem)
 ! Prepare the outflow sets from uses
 
 call array_ini(ntime,release, 0.0d0)
@@ -611,7 +611,7 @@ nchild = my_node(icurrent_id)%nchild
 
 	end do
 15 format(a,2x, <ntime>(2x,F8.3))
-write(29,15) my_node(icurrent_id)%name, (release(j), j=1,ntime)
+write(35,15) my_node(icurrent_id)%name, (release(j), j=1,ntime)
 ! Loop for flow mass balance
 do j= 1,ntime
 

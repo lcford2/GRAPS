@@ -4,15 +4,12 @@ USE My_variables
 implicit doubleprecision(a-h,o-z)
 common /final_print/ifinal
 
-external constr_res,expected_benefits,grobfd,grcnfd,ffsqp
-!CHARACTER(*), PARAMETER :: inpath = "/input/"
-!CHARACTER(*), PARAMETER :: outpath = "/output/"
+external constr_res,expected_benefits,grobfd,grcnfd,ffsqp,simple_benefits,spill_objective,max_release
 
 double precision, allocatable	::	decision_var_lb(:),decision_var_ub(:), decision_var(:),w(:),g(:),f(:)
 Integer,allocatable :: iw(:)
 
-! subroutine declarations
-
+! Opening input files for reading
 open(unit=10, file = 'input.dat',				ACTION = 'READ', STATUS = 'OLD', ERR = 100)
 open(unit=11, file = 'watershed_details.dat',	ACTION = 'READ', STATUS = 'OLD')
 open(unit=12, file = 'nflow_details.dat',		ACTION = 'READ', STATUS = 'OLD')
@@ -27,13 +24,15 @@ open(unit=20, file = 'ibasin_flow_details.dat',	ACTION = 'READ', STATUS = 'OLD')
 open(unit=21, file = 'demand_flow_details.dat',	ACTION = 'READ', STATUS = 'OLD')
 open(unit=22, file = 'sink_details.dat',		ACTION = 'READ', STATUS = 'OLD')
 open(unit=23, file = 'interbasin_details.dat',	ACTION = 'READ', STATUS = 'OLD')
+! Opening output files for writing
 open(unit=31, file = 'storage.out')
-open(unit=54, file = 'hydro.out')
-open(unit=24, file='release.out')
-open(unit=28, file='flow_sets.out')
-open(unit=29, file='node_flow.out')
-open(unit=30, file='spill.out')
-open(unit=44, file='deficit.out')
+open(unit=32, file = 'hydro.out')
+open(unit=33, file = 'release.out')
+open(unit=34, file = 'flow_sets.out')
+open(unit=35, file = 'node_flow.out')
+open(unit=36, file = 'spill.out')
+open(unit=37, file = 'deficit.out')
+
 !  reading input.dat 
 read(10,*)ntime,nensem
 read(10,*)nwatershed,nnatural_flow,nres,nuser,nfnode,ndir_inflows,nret_inflows,ndiversion,nspill_flow,ninterbasin_flow,ndemand_release,nsink,ninterbasin
@@ -219,19 +218,14 @@ call constr_res(nparam,index_cons,decision_var,gcons)
 print *, "ifinal = ",ifinal
 ! end running optimization or simulation
 print *, "exiting..........."
-!write(24,*)'Constraints :'
-!write(24,*)(cons_global(k1),k1=1,ncons)
-!write(24,*)'Objective function'
-!write(24,*)(value_net(k1),k1=1,nensem)
-!write(24,*) 'Optimised decision variables'
 !icount = 1
 icount_max = nuser*ntime
 !do while (icount <= icount_max)
-write(24,50)(decision_var(k1),k1=1,icount_max)
+write(33,50)(decision_var(k1),k1=1,icount_max)
 !icount = icount + 1
 !end do 
 
-close(24)
+close(33)
 21  FORMAT(I3,1x,A40)
 22 FORMAT(I3,1x,A30) 
 50 FORMAT(F10.3)
