@@ -355,7 +355,7 @@ double precision Unit_Conv
 
    if (ifinal.eq.1) then 
        write(32,19) my_user(icurrent_id)%name, (simul_hydropower(j), j=1,ntime) 
-        19 format(a,2x, <ntime>(2x,F10.3))
+        19 format(a,2x, <ntime>(2x,F16.3))
         end if 
 return
 end

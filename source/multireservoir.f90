@@ -249,7 +249,7 @@ ifinal = 1
 call constr_res(nparam,index_cons,decision_var,gcons)
 
 
-write(33,50)(decision_var(k1),k1=1,icount_max)
+write(33,50)(decision_var(k1),k1=1,nparam)
 
 close(31)
 close(32)
@@ -301,7 +301,7 @@ read(11,'(A)')file_name
 
 open(unit=40,file=trim(file_name))
 Do k = 1,nensem
-	Do i = i, nperiods
+	Do i = 1, nperiods
 		read(40,*)(my_watershed(iNum)%natural_inflows(j,k), j=1+((i - 1)*ntime),ntime*i)
 	End Do
 End Do
