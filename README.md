@@ -1,9 +1,13 @@
 # GRAPS
 Generalized Reservoir Analyses using Probabilistic Streamflow
 
-## Binaries
+## Binaries and Compilation
 
 You can find precompiled binaries for 64-bit architechtures for Linux and Windows under their respective directories. Included with the reservoir model is the Feasible Sequential Quadratic Programming (FSQP) optimization algorithim.
+
+To compile the code for your operating system, navigate to the `src` directory and either execute the `build_windows.bat` file or the `build_linux.sh` files. These files will create a temporary subdirectory `build` in `src`, compile the files to that directory, then move the files to the correct folder for your operating system and delete the `build` directory. Both of these files assume your environment is setup to use the Intel Fortran compiler (`ifort`). To use other compilers, like `gfortan`, you can simply update the batch or shell file. The flags will likely be different, so you can either replace them with their equivalent flag for your compiler, or remove them completely. 
+
+If you are running MacOS, you can likely use the `build_linux.sh` script. This has not been tested so you may have to do some manual debugging but it should be fairly similar. 
 
 ## Model Example
 
