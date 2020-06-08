@@ -12,7 +12,7 @@ double precision expect_bens, initial_bens
 
 
 ! Opening input files for reading
-open(unit=10, file = 'input_data_files/input.dat',					ACTION = 'READ', STATUS = 'OLD', ERR = 100)
+open(unit=10, file = 'input_data_files/input.dat',					ACTION = 'READ', STATUS = 'OLD')
 open(unit=11, file = 'input_data_files/watershed_details.dat',		ACTION = 'READ', STATUS = 'OLD')
 open(unit=12, file = 'input_data_files/nflow_details.dat',			ACTION = 'READ', STATUS = 'OLD')
 open(unit=13, file = 'input_data_files/reservoir_details.dat',		ACTION = 'READ', STATUS = 'OLD')

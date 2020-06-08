@@ -39,7 +39,8 @@
 		double precision latitude, longitude
 		double precision elevation_max, elevation_min, storage_max, storage_min
 		double precision elevation_storage_coeff(3), storage_area_coeff(2)
-
+		double precision eot_storage
+		
 		double precision, allocatable :: elevation_rvalve(:), area_rvalve(:),loss_coeff_max(:), loss_coeff_min(:) 
 		double precision current_storage, target_storage, storage_prob
 		double precision, allocatable ::  rule_curve(:),evaporation_rate(:)
