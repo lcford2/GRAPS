@@ -168,6 +168,8 @@ Do i = 1,nwatershed
 	Allocate(my_flow_set(i)%controlled_flows(ntime), my_flow_set(i)%uncontrolled_flows(ntime,nensem))
 end do
 
+index_cons = 1
+
 if(runflag == 1) then
 	! Read parameters for FFSQP
 	read(25,*)nf,mode,iprint,miter
@@ -208,7 +210,6 @@ if(runflag == 1) then
 
 	ifinal = 0
 	inform = 0
-	index_cons = 1
 	if (objective_function.eq."simple_benefits") then
 		call simple_benefits(nparam, 1, decision_var, initial_bens)
 		call FFSQP(nparam,nf,nineqn,nineq,neqn,neq,mode,iprint,miter,inform,bigbnd,eps,  &
@@ -241,11 +242,12 @@ if(runflag == 1) then
 		expect_bens = -expect_bens
 	end if
 	write(38, "(F20.4)") expect_bens
+	write(*,"(A,1x,F12.2)") "Expected Benefits :", -expect_bens
 end if 
 ifinal = 1  
  
 call constr_res(nparam,index_cons,decision_var,gcons)
-write(*,"(A,1x,F12.2)") "Expected Benefits :", -expect_bens
+
 
 write(33,50)(decision_var(k1),k1=1,icount_max)
 
@@ -294,9 +296,9 @@ END DO
 
 Allocate(my_watershed(iNum)%natural_inflows(ntime*nperiods, nensem))
 
-read(11,*)file_name
+read(11,'(A)')file_name
 
-!print *, file_name
+
 open(unit=40,file=trim(file_name))
 Do k = 1,nensem
 	Do i = i, nperiods

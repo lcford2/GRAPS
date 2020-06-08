@@ -40,7 +40,7 @@ End do
 !End do
 
 if (.TRUE.) then
-open(unit=43, file = 'decisionvar_details.dat',  ACTION = 'READ', STATUS = 'OLD')
+open(unit=43, file = 'input_data_files/decisionvar_details.dat',  ACTION = 'READ', STATUS = 'OLD')
 
 DO i = 1,nparam
 

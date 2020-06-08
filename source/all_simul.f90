@@ -289,10 +289,12 @@ do i = 1,nensem
 
 		ichild_type = my_reservoir(icurrent_id)%child_type(i1)
 		ichild_id   = my_reservoir(icurrent_id)%child_id(i1)
-
-		if (my_user(ichild_id)%user_type == 4) then
-			call hydropower(ichild_type,ichild_id,icurrent_id, icurrent_type, simul_stor, release, nensem)
-		end if 
+		
+		if (ichild_type.eq.4) then
+			if (my_user(ichild_id)%user_type.eq.4) then
+				call hydropower(ichild_type,ichild_id,icurrent_id, icurrent_type, simul_stor, release, nensem)
+			end if 
+		end if
 	end do
 
 	if(iflag.eq.1)then
@@ -328,8 +330,7 @@ double precision head_elevation(ntime)
 double precision Unit_Conv
 		! output in MWh/month
         !Unit_Conv = 62.4*43560*0.746/3600/550 ! Amir's Unit Conv =  62.4*43560*1000/0.74/3600/1000/1000  ! Yi's Unit_Conv = 62.5*1.356*1000/2/31/1000000
-        Unit_Conv = 9.81*1000/3600 ! [9.81 KN/m^3]*[10^6m^3/hm^3]/[3600 KJ/KWh]*[1000 KWh/MWh] Input in thousand cubic meters per month -Lucas
-		
+        Unit_Conv = 9.81*1000/3600 ! [9.81 KN/m^3]*[10^6m^3/hm^3]/[3600 KJ/KWh]*[1000 KWh/MWh] flow in hm3 per month, head in m -Lucas
         stor_uni = my_reservoir(icurrent_id)%current_storage
         do j = 1, ntime
             !Calculating head Elevation
