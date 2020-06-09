@@ -177,7 +177,7 @@ if(runflag == 1) then
 	! model params to modify in the above file, if needed : 
 	! nf : Number of objective fucntions 
 	! mode : 110 [CBA - ref. ffsqp.f ] 
-	!iprint : print level information 
+	! iprint : print level information 
 	! miter : maximum Number of iteration 
 	! bigbnd : plus infinity 
 	! eps : stopping criterion that ensures a solution, the norm of the Newton direction vector is smaller than eps 
@@ -411,21 +411,23 @@ Allocate(my_reservoir(iNum)%loss_coeff_max(n3),my_reservoir(iNum)%loss_coeff_min
 
 Do i = 1, n3
 
-	read(13,*)t1,t2,t3,t4,t5,t6
+	read(13,*)t1,t2,t3,t4
 	my_reservoir(iNum)%elevation_rvalve(i) = t1
 	my_reservoir(iNum)%area_rvalve(i)	   = t2
 	my_reservoir(iNum)%loss_coeff_max(i)   = t3
-	my_reservoir(iNum)%loss_coeff_max(i)   = t4
-	my_reservoir(iNum)%target_storage      = t5
-	my_reservoir(iNum)%storage_prob        = t6
+	my_reservoir(iNum)%loss_coeff_min(i)   = t4
 
 End do
 
+read(13, *) t5, t6
+my_reservoir(iNum)%target_storage      = t5
+my_reservoir(iNum)%storage_prob        = t6
+
 Allocate(my_reservoir(iNum)%rule_curve(ntime*nperiods),my_reservoir(iNum)%evaporation_rate(ntime*nperiods))
 
-do j = 1, nperiods
-	read(13,*)(my_reservoir(iNum)%rule_curve(i),i=1+((j-1)*ntime),ntime*j)
-end do
+! do j = 1, nperiods
+! 	read(13,*)(my_reservoir(iNum)%rule_curve(i),i=1+((j-1)*ntime),ntime*j)
+! end do
 
 do j = 1, nperiods
 	read(13,*)(my_reservoir(iNum)%evaporation_rate(i),i=1+((j-1)*ntime),ntime*j)
@@ -480,24 +482,24 @@ Do i = 1,my_user(iNum)%nparent
 
 end do
 
-	read(14,*)t1,t2,t3,t4,t5,t6,t7
+read(14,*)t1,t2,t3,t4,t5,t6,t7
 
-	my_user(iNum)%failure_prob      = (1-t1)
-	my_user(iNum)%con_res_vol	   = t2
-	my_user(iNum)%tariff           = t3
-	my_user(iNum)%penalty		   = t4
-	my_user(iNum)%minimum_release = t5
-	my_user(iNum)%maximum_release = t6
-	my_user(iNum)%penalty_compen  = t7
-	do j = 1, nperiods
-		read(14,*)(my_user(iNum)%demand_fract(i), i=1+((j-1)*ntime),ntime*j)
-	end do
-	read(14,*)(my_user(iNum)%restr_fract(i), i=1,nres_level)
-	read(14,*)(my_user(iNum)%res_compensation(i), i=1,nres_level)
+my_user(iNum)%failure_prob     = (1-t1)
+my_user(iNum)%con_res_vol	   = t2
+my_user(iNum)%tariff           = t3
+my_user(iNum)%penalty		   = t4
+my_user(iNum)%minimum_release  = t5
+my_user(iNum)%maximum_release  = t6
+my_user(iNum)%penalty_compen   = t7
+! do j = 1, nperiods
+! 	read(14,*)(my_user(iNum)%demand_fract(i), i=1+((j-1)*ntime),ntime*j)
+! end do
+read(14,*)(my_user(iNum)%restr_fract(i), i=1,nres_level)
+read(14,*)(my_user(iNum)%res_compensation(i), i=1,nres_level)
 	
 if(my_user(iNum)%user_type.eq.4)then
 
-	read(14,*)t1,t2,t3,t4,t5,t6
+	read(14,*)t1,t2,t3,t4,t5,t6,t7
 
 	my_user(iNum)%max_discharge = t1
 	my_user(iNum)%installed_capacity = t2
@@ -507,11 +509,10 @@ if(my_user(iNum)%user_type.eq.4)then
 	my_user(iNum)%unit_rate_energy = t6
 
 
-        Allocate(my_user(iNum)%tail_elevation(ntime*nperiods))
-!        Do k = 1,nensem
-                
-!        		read(14,*)(my_user(iNum)%tail_elevation(j1), j1=1,ntime)
-!        END DO
+	Allocate(my_user(iNum)%tail_elevation(ntime*nperiods))
+	do k = 1, nperiods
+		read(14,*)(my_user(iNum)%tail_elevation(j1), j1=1+((k-1)*ntime),ntime*k)
+	end do
 
 
 end if
@@ -523,7 +524,6 @@ my_user(iNum)%nlags = nlags
 Allocate(my_user(iNum)%ffraction(nlags))
 
 read(14,*)(my_user(iNum)%ffraction(i),i=1,nlags)
-
 
 20 FORMAT(A40)
 
@@ -653,7 +653,6 @@ read(19,*)my_spill_flow(iNum)%minimum_discharge, my_spill_flow(iNum)%maximum_dis
 
 20 FORMAT(A40)
 
-
 RETURN
 
 END
@@ -674,7 +673,6 @@ read(20,*)my_interbasin_flow(iNum)%end_type, my_interbasin_flow(iNum)%end_id
 read(20,*)my_interbasin_flow(iNum)%minimum_discharge, my_interbasin_flow(iNum)%maximum_discharge
 
 20 FORMAT(A40)
-
 
 RETURN
 

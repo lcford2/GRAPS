@@ -4,7 +4,7 @@ implicit doubleprecision(a-h,o-z)
 common /final_print/ifinal
 
 Real*8 decision_var(nparam),total_deficit(nensem),gcons
-!integer ifinal
+! integer ifinal
 ! check whether the current value of iteration is same as that of previous iteration
 ! if so , just return the current value of the constraint using the variable index_cons.
 
@@ -15,50 +15,43 @@ Real*8 decision_var(nparam),total_deficit(nensem),gcons
 ivar_status = icheck_var_status(nparam,decision_var,temp_decision_var)
 if (ifinal.eq.1) ivar_status =1
 if(ivar_status.eq.0)then
-
 	gcons = cons_global(index_cons)
 !	gcons = -0.1
-
-
     return
-
 end if
 
 ! if the decision_variable value has changed then perform simulation
 
-nsimul_block = nres +nfnode
+nsimul_block = nres + nfnode
 
-!call array_int_ini(ntemp,isimul_status,0)
 
 itemp_type = 0
 itemp_id = 0
-
-
 
 iflow_set = 0
 icurrent_id = 0
 icurrent_type = 0
 
 
- call array_ini(nensem,total_deficit,0.0d0)
- call array_ini(nensem,value_net,0.0d0)
- call array_ini(ncons,cons_global,0.0d0)
+call array_ini(nensem,total_deficit,0.0d0)
+call array_ini(nensem,value_net,0.0d0)
+call array_ini(ncons,cons_global,0.0d0)
 
 ! Initialize controlled and uncontrolled flows for each watershed
 
 do i = 1,nwatershed
 
-		call array_ini(ntime,my_flow_set(i)%controlled_flows,0.0d0)
+	call array_ini(ntime,my_flow_set(i)%controlled_flows,0.0d0)
 
-		do j = 1,nensem
+	do j = 1,nensem
 
-			call array_ini(ntime,my_flow_set(i)%uncontrolled_flows(1,j),0.0d0)
+		call array_ini(ntime,my_flow_set(i)%uncontrolled_flows(1,j),0.0d0)
 
-		end do
+	end do
 
-		parallel_track(i)%order_type = 0
+	parallel_track(i)%order_type = 0
 
-		parallel_track(i)%order_id = 0
+	parallel_track(i)%order_id = 0
 
 end do
 
@@ -67,12 +60,8 @@ icount = 0
 
 ! Loop for simulation at each junction node and reservoir
 
-! print *, nsimul_block
-!call solution_path()
-!print *, (k1, my_network_order(k1)%order_type, my_network_order(k1)%order_id, k1=1, nsimul_block)
 
 do i = 1, nsimul_block
-
 
 	iprev_id = icurrent_id
 	iprev_type = icurrent_type
@@ -80,15 +69,13 @@ do i = 1, nsimul_block
 	icurrent_type = my_network_order(i)%order_type
 	icurrent_id = my_network_order(i)%order_id
 
-
 	if(icurrent_type.eq.5)then
 	
-	        call node_simul_module(icurrent_type,icurrent_id,iprev_id, &
-	   iprev_type, nparam,decision_var)
+	    call node_simul_module(icurrent_type,icurrent_id,iprev_id, &
+	   							iprev_type, nparam,decision_var)
 
 	end if
 	
-        !icurrent_type = 3
 
 	if(icurrent_type.eq.3) then
 		call reservoir_simul_module(icurrent_type,icurrent_id, iprev_id, &
@@ -103,18 +90,16 @@ do i = 1, nsimul_block
 		end if
 	end if	
 end do
-!print *, 'I am here'
+
 !if (ifinal.eq.1) print *, 'entering deficit splitter........'
 call deficit_splitter(total_deficit,decision_var,nparam)
 !if (ifinal.eq.1) print *, 'exiting deficit_splitter.....'
-!call expected_benefits(nparam,1,decision_var,fj)
-if(ifinal.eq.1) print *, index_cons
- 	gcons = cons_global(index_cons)
-!    print *, gcons 
-!	print *, index_cons
-!	gcons = -0.1
-if (ifinal.eq.1) print *, 'exiting const_res'
 
+if(ifinal.eq.1) print *, index_cons
+
+gcons = cons_global(index_cons)
+
+if (ifinal.eq.1) print *, 'exiting const_res'
 return
 end
 
@@ -535,8 +520,7 @@ do j = 1,ntime
 				do k = 1,my_user(iblock_id)%nlags
 					
 					fract = (1-my_user(iblock_id)%ffraction(k))
-					rflow = my_user(iblock_id)%demand_fract(j-k) &
-									*decision_var((iblock_id-1)*ntime+j)*fract
+					rflow = decision_var((iblock_id-1)*ntime+j)*fract
 
 					temp1 = temp1 + rflow
 
