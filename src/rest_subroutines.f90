@@ -24,7 +24,7 @@ Do i = 1,nuser
                 k = k+1
 	        decision_var_lb(k) = my_user(i)%minimum_release
 	        decision_var_ub(k) = my_user(i)%maximum_release
-	        decision_var(k) = my_user(i)%demand_fract(j) ! read demand frac
+	        decision_var(k) = my_user(i)%maximum_release
 	
         End do
 End do
