@@ -9,6 +9,10 @@ To compile the code for your operating system, navigate to the `src` directory a
 
 If you are running MacOS, you can likely use the `build_linux.sh` script. This has not been tested so you may have to do some manual debugging but it should be fairly similar. 
 
+## Input Files
+
+You can find examples of the input files in `brazil_example/input_data_files/`. There are explanations of these input files in the `input_file_explanations` folder. If you have questions after going over the input file explanation PDFs, the best way to get a feel for what is required is to look at the subroutines used for reading the files in `multireservoir.f90`. 
+
 ## Model Example
 
 An example model is presented under the `brazil_example` folder. This example is setup for the Jaguaribe River Basin in Ceara, Brazil for 1997. To run this example you will need to copy all the files from the folder containing the binaries for your operating system (`windows` or `linux`) to the `brazil_example` folder. You can follow the instructions below to decide how you want the model to run. Once you are satisfied with the setup, you should execute `./multireservoir` from within the `brazil_example` folder from the command line. 
