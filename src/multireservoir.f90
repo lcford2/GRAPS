@@ -385,6 +385,12 @@ n4 = my_reservoir(iNum)%nspillway
 Allocate(my_reservoir(iNum)%child_id(n1),my_reservoir(iNum)%child_type(n1))
 Allocate(my_reservoir(iNum)%parent_id(n2),my_reservoir(iNum)%parent_type(n2))
 Allocate(my_reservoir(iNum)%spill_type(n4),my_reservoir(iNum)%crest_level(n4),my_reservoir(iNum)%discharge_max(n4))
+Allocate(my_reservoir(iNum)%spill(ntime*nperiods, nensem))
+do i=1,nensem
+	do j=1,ntime*nperiods
+		my_reservoir(iNum)%spill(j, i) = 0.0
+	end do
+end do
 
 Do i = 1,n4
 
@@ -523,7 +529,11 @@ my_user(iNum)%nlags = nlags
 
 Allocate(my_user(iNum)%ffraction(nlags))
 
-read(14,*)(my_user(iNum)%ffraction(i),i=1,nlags)
+if (nlags.gt.0) then 
+	read(14,*)(my_user(iNum)%ffraction(i),i=1,nlags)
+end if
+
+read(14, *) my_user(iNum)%loss_factor
 
 20 FORMAT(A40)
 

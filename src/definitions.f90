@@ -13,7 +13,7 @@
 		Integer, allocatable ::  parent_type(:),child_type(:)
 		Integer, allocatable :: ffraction(:)
 
-		double precision minimum_release, maximum_release
+		double precision minimum_release, maximum_release, loss_factor
 		double precision tariff,penalty, failure_prob,con_res_vol,penalty_compen
 		double precision, allocatable :: demand_fract(:), res_compensation(:),restr_fract(:)
 
@@ -45,6 +45,7 @@
 		double precision current_storage, target_storage, storage_prob
 		double precision, allocatable ::  rule_curve(:),evaporation_rate(:)
 		double precision, allocatable :: tar_restr_prob(:),restr_fraction(:),crest_level(:),discharge_max(:)
+		double precision, allocatable :: spill(:,:)
 
 	END TYPE Reservoir
 

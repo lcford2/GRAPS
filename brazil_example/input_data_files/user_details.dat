@@ -6,8 +6,8 @@ Oros Agriculture
 0.9  20   20   10  0   31.967   3
 0.5  0.9
 10  15
-1
-0.01
+0
+0.6
 2
 Banabuiu Agriculture
 2   3  1  1  2
@@ -16,8 +16,8 @@ Banabuiu Agriculture
 0.9   20  8  20  0   28.880    3
 0.5  0.9
 5   7
-1
-0.01
+0
+0.6
 3
 LJA Agriculture
 3   3  1  1  2
@@ -26,8 +26,8 @@ LJA Agriculture
 0.9   20  8 20  0   16.67    3
 0.5  0.9
 5   7
-1
-0.01
+0
+0.5
 4
 Canal do Trabalhador
 4   5  1  1  2
@@ -36,8 +36,8 @@ Canal do Trabalhador
 0.9   20  87  20  0   10.044    3
 0.5  0.9
 60  75
-1
-0.01
+0
+0.1
 5
 Pacajus Pump
 5   5  1  1  2
@@ -46,8 +46,8 @@ Pacajus Pump
 0.9   20  87  20  0   11.44    3
 0.5  0.9
 60  75
-1
-0.01
+0
+0.1
 6
 Fortaleza Municipal Use
 6   1  1  1  2
@@ -56,5 +56,5 @@ Fortaleza Municipal Use
 0.9   20  87  20  0   21.906    3
 0.5  0.9
 60  75
-1
-0.01
+0
+0.1

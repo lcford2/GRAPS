@@ -8,20 +8,16 @@ Real*8 decision_var(nparam),total_deficit(nensem),gcons
 ! check whether the current value of iteration is same as that of previous iteration
 ! if so , just return the current value of the constraint using the variable index_cons.
 
-!gcons = -0.1
-
-!return
 
 ivar_status = icheck_var_status(nparam,decision_var,temp_decision_var)
 if (ifinal.eq.1) ivar_status =1
+
 if(ivar_status.eq.0)then
 	gcons = cons_global(index_cons)
-!	gcons = -0.1
     return
 end if
 
 ! if the decision_variable value has changed then perform simulation
-
 nsimul_block = nres + nfnode
 
 
@@ -40,49 +36,33 @@ call array_ini(ncons,cons_global,0.0d0)
 ! Initialize controlled and uncontrolled flows for each watershed
 
 do i = 1,nwatershed
-
 	call array_ini(ntime,my_flow_set(i)%controlled_flows,0.0d0)
-
 	do j = 1,nensem
-
 		call array_ini(ntime,my_flow_set(i)%uncontrolled_flows(1,j),0.0d0)
-
 	end do
-
 	parallel_track(i)%order_type = 0
-
 	parallel_track(i)%order_id = 0
-
 end do
-
 
 icount = 0
 
 ! Loop for simulation at each junction node and reservoir
-
-
 do i = 1, nsimul_block
-
 	iprev_id = icurrent_id
 	iprev_type = icurrent_type
 
 	icurrent_type = my_network_order(i)%order_type
 	icurrent_id = my_network_order(i)%order_id
 
-	if(icurrent_type.eq.5)then
-	
-	    call node_simul_module(icurrent_type,icurrent_id,iprev_id, &
-	   							iprev_type, nparam,decision_var)
-
-	end if
-	
-
-	if(icurrent_type.eq.3) then
+	if(icurrent_type.eq.5)then	
+	    call node_simul_module(icurrent_type,icurrent_id,iprev_id,iprev_type,nparam,decision_var)
+	else if(icurrent_type.eq.3) then
 		call reservoir_simul_module(icurrent_type,icurrent_id, iprev_id, &
 	   			iprev_type,nparam,decision_var,total_deficit,nend_cons)
 		icount = icount +1
 		ensem = nensem
 		! Calculation for end of time steps storage constraints
+		! If it is only a single ensemble member, don't deal with probabilities.
 		if (nensem.eq.1) then
 			cons_global(icount) = my_reservoir(icurrent_id)%target_storage - my_reservoir(icurrent_id)%eot_storage
 		else
@@ -91,76 +71,57 @@ do i = 1, nsimul_block
 	end if	
 end do
 
-!if (ifinal.eq.1) print *, 'entering deficit splitter........'
 call deficit_splitter(total_deficit,decision_var,nparam)
-!if (ifinal.eq.1) print *, 'exiting deficit_splitter.....'
 
 if(ifinal.eq.1) print *, index_cons
-
 gcons = cons_global(index_cons)
-
-if (ifinal.eq.1) print *, 'exiting const_res'
 return
 end
 
 ! subroutine for reservoir simulation
-
 subroutine reservoir_simul_module(icurrent_type,icurrent_id,iprev_id, &
 	   iprev_type, nparam,decision_var,total_deficit,nend_cons)
-	use My_variables
-	implicit doubleprecision(a-h,o-z)
-	common /final_print/ifinal
+use My_variables
+implicit doubleprecision(a-h,o-z)
+common /final_print/ifinal
 
-	double precision decision_var(nparam),q(ntime),simul_deficit(ntime),simul_evapo(ntime)
-	double precision simul_stor(ntime), simul_spill(ntime),rate_area(ntime),release(ntime),act_release(ntime)
-	double precision total_deficit(nensem)
+double precision decision_var(nparam),q(ntime),simul_deficit(ntime),simul_evapo(ntime)
+double precision simul_stor(ntime), simul_spill(ntime),rate_area(ntime),release(ntime),act_release(ntime)
+double precision total_deficit(nensem)
 
-	nparent = my_reservoir(icurrent_id)%nparent
+nparent = my_reservoir(icurrent_id)%nparent
 
+ijump = 0
+iadd = 0
 
+do i1 = 1,nparent
+	if((iprev_type.eq.my_reservoir(icurrent_id)%parent_type(i1)).and. &
+		(iprev_id.eq.my_reservoir(icurrent_id)%parent_id(i1)))ijump = 1
+end do
 
-	ijump = 0
-	iadd = 0
+if(ijump.eq.0)then	
+	if((iprev_type.ne.0).and.(iprev_id.ne.0))then
+		parallel_track(iflow_set)%order_id = iprev_id
+		parallel_track(iflow_set)%order_type = iprev_type
+	end if
+	iflow_set = iflow_set +1        
+end if 
 
-	do i1 = 1,nparent
-			
-		if((iprev_type.eq.my_reservoir(icurrent_id)%parent_type(i1)).and. &
-			(iprev_id.eq.my_reservoir(icurrent_id)%parent_id(i1)))ijump = 1
-
+do i = 1,nensem
+	do j = 1,ntime
+		my_flow_set(iflow_set)%uncontrolled_flows(j,i) = 0
 	end do
-
-	if(ijump.eq.0)then
-	
-		if((iprev_type.ne.0).and.(iprev_id.ne.0))then
-
-			parallel_track(iflow_set)%order_id = iprev_id
-			parallel_track(iflow_set)%order_type = iprev_type
-
-		end if
-
-		iflow_set = iflow_set +1
-        
-	end if 
-
-	do i = 1,nensem
-		do j = 1,ntime
-			my_flow_set(iflow_set)%uncontrolled_flows(j,i) = 0
-		end do
-	end do
+end do
 
 inodeparent = 0
 
-	do i1 = 1,nparent
+do i1 = 1,nparent
+	iparent_type = my_reservoir(icurrent_id)%parent_type(i1)
+	if (iparent_type == 5)  then 
+		inodeparent = 1
+	end if
+end do
 
-		iparent_type = my_reservoir(icurrent_id)%parent_type(i1)
-		if (iparent_type == 5)  then 
-						inodeparent =1
-		else 
-						inodeparent = 0
-		end if               
-
-	end do
-    
 
 if (inodeparent.ne.1) then
 	do j = 1,ntime
@@ -168,70 +129,58 @@ if (inodeparent.ne.1) then
 	end do
 end if
 
-
-
-    ! Loop for adding controlled and uncontrolled flow from parents
-	do i1 = 1,nparent
-
-		iparent_type = my_reservoir(icurrent_id)%parent_type(i1)
-		iparent_id   = my_reservoir(icurrent_id)%parent_id(i1)
+! Loop for adding controlled and uncontrolled flow from parents
+do i1 = 1,nparent
+	iparent_type = my_reservoir(icurrent_id)%parent_type(i1)
+	iparent_id   = my_reservoir(icurrent_id)%parent_id(i1)
 	! Prepare the inflow sets
 
-		iadd = 0
+	iadd = 0
 
-		if(iparent_type.eq.1)call add_uncontrolled_flows  &
-		  (iparent_type,iparent_id,decision_var,nparam)
+	! If parent is a watershed
+	if(iparent_type.eq.1)call add_uncontrolled_flows(iparent_type,iparent_id,decision_var,nparam)
 
-
-		if(iparent_type.eq.3) then
+	! If parent is another reservoir
+	if(iparent_type.eq.3) then
+		call add_controlled_flows(iparent_type,iparent_id, decision_var,nparam)
+		! call add_spill_flows(iparent_id)
+	end if
+	
+	! If parent is a junction node
+	if(iparent_type.eq.5) then
+		do j1 = 1,nwatershed
+			if((parallel_track(j1)%order_type.eq.iparent_type).and.(parallel_track(j1)%order_id.eq.iparent_id)) then 
+				call add_all_flows(j1,iparent_type,iparent_id,decision_var,nparam)
+			end if
+		end do
+		if((iparent_type.ne.iprev_type).and.(iparent_id.ne.iprev_id)) then
 			call add_controlled_flows(iparent_type,iparent_id, decision_var,nparam)
 		end if
-		 
-		if(iparent_type.eq.5) then
-			
-		    do j1 = 1,nwatershed
-
-				if((parallel_track(j1)%order_type.eq.iparent_type).and. &
-				  (parallel_track(j1)%order_id.eq.iparent_id))call add_all_flows &
-				  (j1,iparent_type,iparent_id,decision_var,nparam)
-
-			end do
-
-            if((iparent_type.ne.iprev_type).and.(iparent_id.ne.iprev_id))call  &
-			add_controlled_flows(iparent_type,iparent_id, decision_var,nparam)
-
-		end if
-
-		if((iparent_type.eq.4).or.(iparent_type.eq.13))call add_controlled_flows  &
-		  (iparent_type,iparent_id, decision_var,nparam)
-
-	end do
+	end if
+	! if parent is a user or a interbasin transfer
+	if((iparent_type.eq.4).or.(iparent_type.eq.13)) then
+		call add_controlled_flows(iparent_type,iparent_id, decision_var,nparam)
+	end if
+end do
 
 ! Prepare the outflow sets
-
 call array_ini(ntime,release, 0.0d0)
 call array_ini(ntime,act_release, 0.0d0)
 
-	nchild = my_reservoir(icurrent_id)%nchild
+nchild = my_reservoir(icurrent_id)%nchild
        
 ! Loop for adding the releases to child nodes
-	do i1 = 1,nchild
+do i1 = 1,nchild
+	ichild_type = my_reservoir(icurrent_id)%child_type(i1)
+	ichild_id   = my_reservoir(icurrent_id)%child_id(i1)
+	call calculate_outflows(ichild_type,ichild_id,icurrent_id, icurrent_type, release,decision_var,nparam)
+end do
 
-		ichild_type = my_reservoir(icurrent_id)%child_type(i1)
-		ichild_id   = my_reservoir(icurrent_id)%child_id(i1)
-
-		call calculate_outflows(ichild_type,ichild_id,icurrent_id, icurrent_type, release,decision_var,nparam)
-
-	end do
-
-
-
-	storage_max = my_reservoir(icurrent_id)%storage_max
-	storage_ini = my_reservoir(icurrent_id)%current_storage
+storage_max = my_reservoir(icurrent_id)%storage_max
+storage_ini = my_reservoir(icurrent_id)%current_storage
 
 do j = 1,ntime
 	rate_area(j) = my_reservoir(icurrent_id)%evaporation_rate(j)
-
 end do
 
 
@@ -239,26 +188,22 @@ end do
 nend_cons = 0
 
 ! Loop for reservoir simulation
-
 do i = 1,nensem
-
 	do j = 1,ntime
-
 		q(j) = my_flow_set(iflow_set)%uncontrolled_flows(j,i) + &
 		       my_flow_set (iflow_set)%controlled_flows(j)
 	end do
-
 	call reser_simul(icurrent_id, q, ntime,release,storage_max, storage_ini,rate_area, &
 					 simul_stor,simul_spill, simul_evapo, simul_deficit,iflag)
-	
 	do j=1,ntime
 		spill_values((icurrent_id - 1) * ntime + j) = simul_spill(j)
+		my_reservoir(icurrent_id)%spill(j, i) = simul_spill(j)
 		act_release(j) = release(j)+simul_spill(j)-simul_deficit(j)
 		if(act_release(j).le.0.0)act_release(j) = 0.0
 	end do
 	my_reservoir(icurrent_id)%eot_storage = simul_stor(ntime)
 
-  if (ifinal.eq.1) then
+  	if (ifinal.eq.1) then
     	write(31,15) my_reservoir(icurrent_id)%name, (simul_stor(j), j=1,ntime)        
 			15 format(a,2x, <ntime>(2x,F8.3))
 		write(34,15) my_reservoir(icurrent_id)%name, (act_release(j), j=1,ntime)
@@ -271,10 +216,8 @@ do i = 1,nensem
 	end if  
 	
 	do i1 = 1,nchild
-
 		ichild_type = my_reservoir(icurrent_id)%child_type(i1)
 		ichild_id   = my_reservoir(icurrent_id)%child_id(i1)
-		
 		if (ichild_type.eq.4) then
 			if (my_user(ichild_id)%user_type.eq.4) then
 				call hydropower(ichild_type,ichild_id,icurrent_id, icurrent_type, simul_stor, release, nensem)
@@ -283,23 +226,19 @@ do i = 1,nensem
 	end do
 
 	if(iflag.eq.1)then
-
 		do k=1,ntime
-
 			total_deficit(i) = total_deficit(i)+simul_deficit(k)
-
 		end do
-
 	end if
 
-	if(simul_stor(ntime).lt.my_reservoir(icurrent_id)%target_storage)nend_cons = nend_cons + 1
-	
-
+	if(simul_stor(ntime).lt.my_reservoir(icurrent_id)%target_storage) then
+		nend_cons = nend_cons + 1
+	end if
 end do
+
 if (ifinal.eq.1) then
 	if(nensem.gt.1.0)	print *, my_reservoir(icurrent_id)%name, "Reliability =", 100*(1-(real(nend_cons)/real(nensem))),'%'
 end if
-!if (ifinal.eq.1) print *, 'done optimization '
 
 return
 end
@@ -353,124 +292,119 @@ use My_variables
 implicit doubleprecision(a-h,o-z)
 common /final_print/ifinal
 double precision decision_var(nparam),release(ntime),inflow(ntime)
+double precision user_release(ntime), remaining_flow(ntime)
 
-
-	nparent = my_node(icurrent_id)%nparent
-
+nparent = my_node(icurrent_id)%nparent
 
 ijump = 0
 iadd = 0
 
-	do i1 = 1,nparent
-			
-		if((iprev_type.eq.my_node(icurrent_id)%parent_type(i1)).and. &
-			(iprev_id.eq.my_node(icurrent_id)%parent_id(i1)))ijump = 1
+do i1 = 1,nparent		
+	if((iprev_type.eq.my_node(icurrent_id)%parent_type(i1)).and. &
+		(iprev_id.eq.my_node(icurrent_id)%parent_id(i1)))ijump = 1
+end do
 
+if(ijump.eq.0)then
+	if((iprev_type.ne.0).and.(iprev_id.ne.0))then
+		parallel_track(iflow_set)%order_id = iprev_id
+		parallel_track(iflow_set)%order_type = iprev_type
+	end if
+	iflow_set = iflow_set + 1
+end if 
+
+if (iflow_set.ne.1) then
+	do j = 1,ntime
+		my_flow_set (iflow_set-1)%controlled_flows(j) = 0.0
 	end do
-
-	if(ijump.eq.0)then
-	
-		if((iprev_type.ne.0).and.(iprev_id.ne.0))then
-
-			parallel_track(iflow_set)%order_id = iprev_id
-			parallel_track(iflow_set)%order_type = iprev_type
-
-		end if
-
-			iflow_set = iflow_set +1
-        
-
-	end if 
-if (iflow_set .NE. 1) then
-        do j = 1,ntime
-
-        	my_flow_set (iflow_set-1)%controlled_flows(j) = 0.0
-
-        end do
 end if 
 
 do j = 1,ntime
-
 	my_flow_set (iflow_set)%controlled_flows(j) = 0.0
-
 end do
 
 ! Add controlled and uncontrolled flows from parents
-	do i1 = 1,nparent
-
-		iparent_type = my_node(icurrent_id)%parent_type(i1)
-		iparent_id   = my_node(icurrent_id)%parent_id(i1)
+do i1 = 1,nparent
+	iparent_type = my_node(icurrent_id)%parent_type(i1)
+	iparent_id   = my_node(icurrent_id)%parent_id(i1)
 
 ! Prepare the inflow sets
 
-		iadd = 0
+	iadd = 0
 
- 		if(iparent_type.eq.1)call add_uncontrolled_flows  &
-		  (iparent_type,iparent_id,decision_var,nparam)
+	if(iparent_type.eq.1) then 
+		call add_uncontrolled_flows(iparent_type,iparent_id,decision_var,nparam)
+	end if
 
+	! Spill is based on inflow, therfore exists for each ensemble.
+	! This is currently not handled properly. 
 
-		if(iparent_type.eq.5) then
-
-		    do j1 = 1,nwatershed
-
-				if((parallel_track(j1)%order_type.eq.iparent_type).and. &
-				  (parallel_track(j1)%order_id.eq.iparent_id))call add_all_flows &
-				  (j1,iparent_type,iparent_id,decision_var,nparam)
-
-			end do
-
-            if((iparent_type.ne.iprev_type).and.(iparent_id.ne.iprev_id))call  &
-			add_controlled_flows(iparent_type,iparent_id, decision_var,nparam)
-
+	if(iparent_type.eq.5) then
+		do j1 = 1,nwatershed
+			if((parallel_track(j1)%order_type.eq.iparent_type).and. &
+				(parallel_track(j1)%order_id.eq.iparent_id))call add_all_flows &
+				(j1,iparent_type,iparent_id,decision_var,nparam)
+		end do
+		if((iparent_type.ne.iprev_type).and.(iparent_id.ne.iprev_id)) then 
+			call add_controlled_flows(iparent_type,iparent_id, decision_var,nparam)
 		end if
+	end if
 
-
-
-		if((iparent_type.eq.4).or.(iparent_type.eq.13))call add_controlled_flows  &
-		  (iparent_type,iparent_id, decision_var,nparam)
-
-	end do
-! Prepare the outflow sets from uses
+	if((iparent_type.eq.4).or.(iparent_type.eq.13)) then
+		call add_controlled_flows(iparent_type,iparent_id, decision_var,nparam)
+	end if
+end do
+15 format(a,2x, <ntime>(2x,F8.3))
+! Prepare the outflow sets from uses\
 
 call array_ini(ntime,release, 0.0d0)
+call array_ini(ntime,user_release, 0.0d0)
+call array_ini(ntime,remaining_flow, 0.0d0)
+
 nchild = my_node(icurrent_id)%nchild
 
 ! Loop for adding releases to child nodes
-	do i1 = 1,nchild
-
-		ichild_type = my_node(icurrent_id)%child_type(i1)
-		ichild_id   = my_node(icurrent_id)%child_id(i1)
-
-
-		if(ichild_type.eq.4)then
-			do j  = 1,ntime
-            	if(ichild_type.eq.4)release (j) = release(j) + decision_var(((ichild_id-1)*ntime)+j)
-			end do
+do i1 = 1,nchild
+	ichild_type = my_node(icurrent_id)%child_type(i1)
+	ichild_id   = my_node(icurrent_id)%child_id(i1)
+	if(ichild_type.eq.4)then
+		do j  = 1,ntime
+			if(ichild_type.eq.4) then 
+				release (j) = release(j) + decision_var(((ichild_id-1)*ntime)+j)
+				user_release(j) = decision_var(((ichild_id-1)*ntime)+j)
+			end if
+		end do
+		if (ifinal.eq.1) then
+			write(35,15) my_user(ichild_id)%name, (user_release(j), j=1,ntime)
 		end if
+	end if
+end do
 
-	end do
 
-if (ifinal.eq.1) then
-	15 format(a,2x, <ntime>(2x,F8.3))
-	write(35,15) my_node(icurrent_id)%name, (release(j), j=1,ntime)
-end if
+do j = 1, ntime
+	remaining_flow(j) = my_flow_set(iflow_set)%controlled_flows(j) - release(j)
+end do
+
+do i1=1, nchild
+	ichild_type = my_node(icurrent_id)%child_type(i1)
+	ichild_id   = my_node(icurrent_id)%child_id(i1)
+	if (ichild_type.eq.12) then
+		write(35,15) my_sink(ichild_id)%name, (remaining_flow(j), j=1,ntime)
+		do j = 1, ntime
+			my_flow_set(iflow_set)%controlled_flows(j) = my_flow_set(iflow_set)%controlled_flows(j) - remaining_flow(j) - release(j)
+		end do
+	end if
+end do
+
+
 ! Loop for flow mass balance
 do j= 1,ntime
-
 	temp = my_flow_set(iflow_set)%controlled_flows(j)
-
 	temp = temp - release(j)
-
-	if(temp.le.0)then 
-		
+	if(temp.le.0)then 	
 		my_flow_set(iflow_set)%controlled_flows(j)= 0.0
-
 	else
 		my_flow_set(iflow_set)%controlled_flows(j)= temp
-
 	end if
-
-
 end do
 
 return
@@ -483,72 +417,51 @@ implicit doubleprecision(a-h,o-z)
 common /final_print/ifinal
 ! Loop for adding natural flow 
 do i = 1,nensem
-
 	do j = 1,ntime
 		temp = my_flow_set(iflow_set)%uncontrolled_flows(j,i) 
 		temp = temp + my_watershed(iblock_id)%natural_inflows(j,i)
 		my_flow_set(iflow_set)%uncontrolled_flows(j,i) = temp
-
 	end do
-
 end do
 
 return
 if (ifinal.eq.1) print *, "Exiting uncontrolled flow.........."
 end
 
+
 subroutine add_controlled_flows(iblock_type,iblock_id,decision_var,nparam)
 use My_variables
 implicit doubleprecision(a-h,o-z)
 common /final_print/ifinal
-double precision decision_var(nparam)
-
+double precision decision_var(nparam), loss_factor
     
 ! Loop for adding controlled flows
 do j = 1,ntime
-
-  if(iblock_type.eq.4)then
-
-  nlags = my_user(iblock_id)%nlags
-
-    if(j.gt.nlags)then
-		   
+  	if(iblock_type.eq.4) then
+		nlags = my_user(iblock_id)%nlags
+		loss_factor = my_user(iblock_id)%loss_factor
+    	if(j.gt.nlags)then   
 			temp1 = 0.0d0
 			if (nlags == 0) then
-				temp1 = decision_var((iblock_id-1)*ntime+j)
+				temp1 = decision_var((iblock_id-1)*ntime+j)*(1-loss_factor)
 			else 
 				do k = 1,my_user(iblock_id)%nlags
-					
 					fract = (1-my_user(iblock_id)%ffraction(k))
-					rflow = decision_var((iblock_id-1)*ntime+j)*fract
-
+					rflow = decision_var((iblock_id-1)*ntime+j)*fract*(1-loss_factor)
 					temp1 = temp1 + rflow
-
 				end do
-
 			end if 
 			temp = temp1
-
 		else
-		  
 	  	temp = 0.0
-		  
-    end if 
+    	end if 
+  	end if 
 
-  end if 
+   if(iblock_type.eq.13) temp = my_interbasin(iblock_id)%average_flow(j)
+   if(iblock_type.eq.3)  temp = decision_var((iblock_id-1)*ntime+j)
+   if(iblock_type.eq.5)  temp = my_flow_set(iflow_set)%controlled_flows(j)
 
-   if(iblock_type.eq.13)temp = my_interbasin(iblock_id)%average_flow(j)
-   if(iblock_type.eq.3)temp = decision_var((iblock_id-1)*ntime+j)
-
-!	if((iblock_type.eq.5).and.(iblock_id.eq.3))then
-!	      temp = 0.0
-!		  go to 15
-!	endif
-
-   if(iblock_type.eq.5)temp = my_flow_set(iflow_set)%controlled_flows(j)
-
-15	my_flow_set(iflow_set)%controlled_flows(j) = temp +my_flow_set(iflow_set)%controlled_flows(j)
-
+15	my_flow_set(iflow_set)%controlled_flows(j) = temp + my_flow_set(iflow_set)%controlled_flows(j)
 end do
 
 return
@@ -596,19 +509,14 @@ double precision decision_var(nparam)
 ! Add uncontrolled_flows
 
 do j = 1,ntime
-!	do k = 1,nensem
-
-
-!		temp = my_flow_set(iadd_set)%uncontrolled_flows(j,k)
-!		temp1 = my_flow_set(iflow_set)%uncontrolled_flows(j,k)
-!		my_flow_set(iflow_set)%uncontrolled_flows(j,k) = temp + temp1
-
-!	end do
-
-		temp = my_flow_set(iadd_set)%controlled_flows(j)
-		temp1 = my_flow_set(iflow_set)%controlled_flows(j)
-		my_flow_set(iflow_set)%controlled_flows(j) = temp + temp1
-
+	do k = 1,nensem
+		temp = my_flow_set(iadd_set)%uncontrolled_flows(j,k)
+		temp1 = my_flow_set(iflow_set)%uncontrolled_flows(j,k)
+		my_flow_set(iflow_set)%uncontrolled_flows(j,k) = temp + temp1
+	end do
+	temp = my_flow_set(iadd_set)%controlled_flows(j)
+	temp1 = my_flow_set(iflow_set)%controlled_flows(j)
+	my_flow_set(iflow_set)%controlled_flows(j) = temp + temp1
 end do
 return
 end
