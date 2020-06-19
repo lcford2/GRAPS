@@ -15,7 +15,7 @@ You can find examples of the input files in `brazil_example/input_data_files/`. 
 
 ## Graphical User Interface
 
-The complementary GRAPS GUI can be found at <a href="https://github.com/lcford2/graps_gui" target="_blank">https://github.com/lcford2/graps_gui</a>.
+The complementary GRAPS GUI can be found at [github.com/lcford2/graps_gui](https://github.com/lcford2/graps_gui).
 
 In the future, these two projects will be linked and released together but for the moment they exist separately. 
 
