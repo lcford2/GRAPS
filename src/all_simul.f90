@@ -61,6 +61,8 @@ do i = 1, nsimul_block
 	   			iprev_type,nparam,decision_var,total_deficit,nend_cons)
 		icount = icount +1
 		ensem = nensem
+		icount = icount +1
+		ensem = nensem
 		! Calculation for end of time steps storage constraints
 		! If it is only a single ensemble member, don't deal with probabilities.
 		if (nensem.eq.1) then
@@ -138,7 +140,9 @@ do i1 = 1,nparent
 	iadd = 0
 
 	! If parent is a watershed
-	if(iparent_type.eq.1)call add_uncontrolled_flows(iparent_type,iparent_id,decision_var,nparam)
+	if ((iparent_type.eq.1).or.(iparent_type.eq.3)) then
+		call add_uncontrolled_flows(iparent_type,iparent_id,decision_var,nparam)
+	end if
 
 	! If parent is another reservoir
 	if(iparent_type.eq.3) then
@@ -292,7 +296,9 @@ use My_variables
 implicit doubleprecision(a-h,o-z)
 common /final_print/ifinal
 double precision decision_var(nparam),release(ntime),inflow(ntime)
-double precision user_release(ntime), remaining_flow(ntime)
+double precision user_release(ntime), remaining_flow(ntime, nensem), loss_factor
+character*40 output_string
+integer cons_loc
 
 nparent = my_node(icurrent_id)%nparent
 
@@ -331,7 +337,7 @@ do i1 = 1,nparent
 
 	iadd = 0
 
-	if(iparent_type.eq.1) then 
+	if ((iparent_type.eq.1).or.(iparent_type.eq.3)) then 
 		call add_uncontrolled_flows(iparent_type,iparent_id,decision_var,nparam)
 	end if
 
@@ -355,10 +361,19 @@ do i1 = 1,nparent
 end do
 15 format(a,2x, <ntime>(2x,F8.3))
 ! Prepare the outflow sets from uses\
-
+! output_string = "Inflow"
+! if (ifinal.eq.1) then
+! 	write(35,15) output_string, (my_flow_set(iflow_set)%controlled_flows(j), j=1,ntime)
+! end if
 call array_ini(ntime,release, 0.0d0)
 call array_ini(ntime,user_release, 0.0d0)
-call array_ini(ntime,remaining_flow, 0.0d0)
+
+do i=1,nensem
+	do j=1,ntime
+		remaining_flow(j, i) = 0.0
+	end do
+end do
+! call array_ini_two(nensem, ntime,remaining_flow, 0.0d0)
 
 nchild = my_node(icurrent_id)%nchild
 
@@ -367,35 +382,45 @@ do i1 = 1,nchild
 	ichild_type = my_node(icurrent_id)%child_type(i1)
 	ichild_id   = my_node(icurrent_id)%child_id(i1)
 	if(ichild_type.eq.4)then
+		loss_factor = my_user(ichild_id)%loss_factor
 		do j  = 1,ntime
 			if(ichild_type.eq.4) then 
 				release (j) = release(j) + decision_var(((ichild_id-1)*ntime)+j)
 				user_release(j) = decision_var(((ichild_id-1)*ntime)+j)
 			end if
 		end do
-		if (ifinal.eq.1) then
-			write(35,15) my_user(ichild_id)%name, (user_release(j), j=1,ntime)
-		end if
+		! if (ifinal.eq.1) then
+		! 	write(35,15) my_user(ichild_id)%name, (user_release(j), j=1,ntime)
+		! end if
 	end if
 end do
 
-
-do j = 1, ntime
-	remaining_flow(j) = my_flow_set(iflow_set)%controlled_flows(j) - release(j)
+do i = 1, nensem
+	do j = 1, ntime
+		remaining_flow(j, i) = my_flow_set(iflow_set)%controlled_flows(j) - release(j) &
+								+ my_flow_set(iflow_set)%uncontrolled_flows(j,i)							
+	end do
 end do
 
 do i1=1, nchild
 	ichild_type = my_node(icurrent_id)%child_type(i1)
 	ichild_id   = my_node(icurrent_id)%child_id(i1)
 	if (ichild_type.eq.12) then
-		write(35,15) my_sink(ichild_id)%name, (remaining_flow(j), j=1,ntime)
-		do j = 1, ntime
-			my_flow_set(iflow_set)%controlled_flows(j) = my_flow_set(iflow_set)%controlled_flows(j) - remaining_flow(j) - release(j)
-		end do
+		if (ifinal.eq.1) then
+			do i = 1, nensem
+				write(35,15) my_sink(ichild_id)%name, (remaining_flow(j,i), j=1,ntime)
+			end do
+		end if
+		! do j = 1, ntime
+		! 	my_flow_set(iflow_set)%controlled_flows(j) = my_flow_set(iflow_set)%controlled_flows(j) - remaining_flow(j) - release(j)
+		! end do
 	end if
 end do
 
-
+cons_loc = nres + nuser + nres_level
+do j = 1, ntime
+	cons_global(cons_loc + j) = -1 !-remaining_flow(j)
+end do
 ! Loop for flow mass balance
 do j= 1,ntime
 	temp = my_flow_set(iflow_set)%controlled_flows(j)
@@ -416,13 +441,23 @@ use My_variables
 implicit doubleprecision(a-h,o-z)
 common /final_print/ifinal
 ! Loop for adding natural flow 
-do i = 1,nensem
-	do j = 1,ntime
-		temp = my_flow_set(iflow_set)%uncontrolled_flows(j,i) 
-		temp = temp + my_watershed(iblock_id)%natural_inflows(j,i)
-		my_flow_set(iflow_set)%uncontrolled_flows(j,i) = temp
+if (iblock_type.eq.1) then 
+	do i = 1,nensem
+		do j = 1,ntime
+			temp = my_flow_set(iflow_set)%uncontrolled_flows(j,i) 
+			temp = temp + my_watershed(iblock_id)%natural_inflows(j,i)
+			my_flow_set(iflow_set)%uncontrolled_flows(j,i) = temp
+		end do
 	end do
-end do
+else if (iblock_type.eq.3) then
+	do i = 1,nensem
+		do j = 1,ntime
+			temp = my_flow_set(iflow_set)%uncontrolled_flows(j,i) 
+			temp = temp + my_reservoir(iblock_id)%spill(j,i)
+			my_flow_set(iflow_set)%uncontrolled_flows(j,i) = temp
+		end do
+	end do
+end if
 
 return
 if (ifinal.eq.1) print *, "Exiting uncontrolled flow.........."
@@ -636,7 +671,7 @@ do k1 = 1,nensem
 			if(simul_def_user(j).ge.my_user(j)%con_res_vol)idef_user(j) = idef_user(j)+ 1.0
 		end do
 	end if
-	call functn(decision_var,nparam,idef_user,ilevel_fail,deficit_split_user,ben_net,simul_def_user)
+	call get_net_ben(decision_var,nparam,idef_user,ilevel_fail,deficit_split_user,ben_net,simul_def_user)
 	value_net(k1) = ben_net
 end do
 
@@ -664,7 +699,7 @@ return
 end
 
 ! subroutine for calculating net benefits
-subroutine functn(decision_var,nparam,idef_user,ilevel_fail,deficit_split_user,ben_net,simul_def_user)
+subroutine get_net_ben(decision_var,nparam,idef_user,ilevel_fail,deficit_split_user,ben_net,simul_def_user)
 use my_variables
 implicit doubleprecision(a-h,o-z)
 common /final_print/ifinal

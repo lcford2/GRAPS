@@ -151,7 +151,7 @@ close(24)
 
 nres_level = my_reservoir(1)%nres_level
 ! total number of contraints 
-ncons = nres + nuser + nres_level 
+ncons = nres + nuser + nres_level + nfnode * ntime
 ! storage reliability contraint for each reservoir
 ! user contract reliability contraint for each user
 ! restricition level probability contraints
@@ -185,9 +185,9 @@ if(runflag == 1) then
 	! udelta : perturbation size 
 	close(25)
 	! nineqn : Number of nonlinear inequality constraints
-	nineqn = ncons 
+	nineqn = ncons - nfnode * ntime
 	! nineq  : Number of inequality constraints     
-	nineq = nineqn
+	nineq = nineqn  + nfnode * ntime
 	! neqn   : Number of nonlinear equality constraints 
 	neqn = 0
 	! neq    : Number of equality constraints 
