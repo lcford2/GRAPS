@@ -209,7 +209,7 @@ do i = 1,nensem
 
   	if (ifinal.eq.1) then
     	write(31,15) my_reservoir(icurrent_id)%name, (simul_stor(j), j=1,ntime)        
-			15 format(a,2x, <ntime>(2x,F8.3))
+			15 format(a,2x, <ntime>(2x,F15.3))
 		write(34,15) my_reservoir(icurrent_id)%name, (act_release(j), j=1,ntime)
 		write(37,15) my_reservoir(icurrent_id)%name, (simul_deficit(j), j=1,ntime)
 		write(36,15) my_reservoir(icurrent_id)%name, (simul_spill(j), j=1, ntime)

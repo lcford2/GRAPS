@@ -2,7 +2,7 @@
 
 rem make a build directory and copy source code to that directory
 mkdir build
-copy *.f* build
+xcopy *.f* build
 cd build
 rem Compiling here, check and traceback are here to assist the user if something goes wrong.
 rem They do not slow down the program, but it is larger than if it is compiled without those flags.

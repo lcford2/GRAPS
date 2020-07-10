@@ -80,7 +80,6 @@ Allocate(my_spill_flow(nspill_flow),my_natural_flow(nnatural_flow),my_interbasin
 ! Reads the system details from individual files until the connectivity given in input.dat comes to an end.
 icount = 0
 icount_max = checksum
-
 DO WHILE (icount<icount_max)
 ! call each subroutines and read input files 
   read(10,21)itype,type_details
@@ -367,7 +366,7 @@ read(13,*)iNum
 
 read(13,20)my_reservoir(iNum)%name 
 read(13,*)my_reservoir(iNum)%latitude, my_reservoir(iNum)%longitude
-print *, my_reservoir(iNum)%name
+! print *, my_reservoir(iNum)%name
 read(13,*)my_reservoir(iNum)%elevation_max, my_reservoir(iNum)%elevation_min 
 read(13,*)my_reservoir(iNum)%storage_max, my_reservoir(iNum)%storage_min, my_reservoir(iNum)%current_storage
 read(13,*)my_reservoir(iNum)%elevation_storage_coeff(1),my_reservoir(iNum)%elevation_storage_coeff(2) &
