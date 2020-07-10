@@ -27,6 +27,7 @@ Integer, allocatable :: isimul_status(:)
 
 double precision, allocatable ::	temp_decision_var(:),cons_global(:),value_net(:)
 double precision, allocatable ::    spill_values(:)
+double precision hydro_conv_coef
 
 
 END MODULE my_variables

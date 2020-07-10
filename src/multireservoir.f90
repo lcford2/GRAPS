@@ -28,6 +28,7 @@ open(unit=22, file = 'input_data_files/sink_details.dat',			ACTION = 'READ', STA
 open(unit=23, file = 'input_data_files/interbasin_details.dat',		ACTION = 'READ', STATUS = 'OLD')
 open(unit=24, file = 'input_data_files/runflag.dat',                ACTION = 'READ', STATUS = 'OLD')
 open(unit=25, file=  'input_data_files/model_para.dat',				ACTION = 'READ', STATUS = 'OLD')
+open(unit=26, file=  'input_data_files/hydropower_conversion.dat',  ACTION = 'READ', STATUS = 'OLD')
 ! Opening output files for writing
 open(unit=31, file = 'output_files/storage.out')
 open(unit=32, file = 'output_files/hydro.out')
@@ -100,6 +101,23 @@ DO WHILE (icount<icount_max)
 icount = icount +1 
 END DO
 
+! The only place in the code that needs information about the units of the input 
+! is the hydropower subroutine. Because the output is in terms of power, gravity must be used. 
+! The "hydropower_conversion.dat" file should be used to provide this unit conversion. 
+! The value in that file should take into account the units provided for storages, flows, and elevations
+! and should include the gravitational coefficient for your unit system, as well as any conversions
+! that should be used to make the units work out. For example:
+! If storage is in [acre-feet] and flows are in [acre feet/month] and elevations are in [feet]
+! and the desired unit for hydropower production is [MWh/month] then:
+! Specific weight of water = 62.4 [lb/ft3]
+! 43560 ft2/acre
+! 2.655e+9 = 1 MWh
+! Conversion = 62.4 [lb/ft3] * 43560 [ft2/acre] / 2.655e+9 [ft-lb/MWh] = 0.001024 [MWh/(ft2 acre)]
+! The power equation used is Power = eff. * flow * head * hydro_conv_coef
+! So the above equation will provide the output in [MWh/month] which is the desired unit.
+! You can perform the same process for whatever units you are providing to the model. 
+read(26,*) hydro_conv_coef
+
 ! Close the input files
 close(10)
 close(11)
@@ -115,6 +133,7 @@ close(20)
 close(21)
 close(22)
 close(23)
+close(26)
 
 !   Convert the data structure into input parameters for the optimization routine.
 ntime = ntime*nperiods
