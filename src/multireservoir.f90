@@ -259,8 +259,8 @@ if(runflag == 1) then
 		initial_bens = -initial_bens
 		expect_bens = -expect_bens
 	end if
-	write(38, "(F20.4)") expect_bens
-	write(*,"(A,1x,F12.2)") "Expected Benefits :", expect_bens
+	write(38, "(EN12.3)") expect_bens
+	write(*,"(A,1x,EN12.3)") "Expected Benefits :", expect_bens
 end if 
 ifinal = 1  
  
