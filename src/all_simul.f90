@@ -209,7 +209,7 @@ do i = 1,nensem
 
   	if (ifinal.eq.1) then
     	write(31,15) my_reservoir(icurrent_id)%name, (simul_stor(j), j=1,ntime)        
-			15 format(a,2x, <ntime>(2x,F15.3))
+			15 format(a,2x, <ntime>(2x,EN12.3))
 		write(34,15) my_reservoir(icurrent_id)%name, (act_release(j), j=1,ntime)
 		write(37,15) my_reservoir(icurrent_id)%name, (simul_deficit(j), j=1,ntime)
 		write(36,15) my_reservoir(icurrent_id)%name, (simul_spill(j), j=1, ntime)
@@ -284,7 +284,7 @@ double precision Unit_Conv
 
    if (ifinal.eq.1) then 
        write(32,19) my_user(icurrent_id)%name, (simul_hydropower(j), j=1,ntime) 
-        19 format(a,2x, <ntime>(2x,F16.3))
+        19 format(a,2x, <ntime>(2x,EN12.3))
         end if 
 return
 end
@@ -360,7 +360,7 @@ do i1 = 1,nparent
 		call add_controlled_flows(iparent_type,iparent_id, decision_var,nparam)
 	end if
 end do
-15 format(a,2x, <ntime>(2x,F8.3))
+15 format(a,2x, <ntime>(2x,EN12.3))
 ! Prepare the outflow sets from uses\
 ! output_string = "Inflow"
 ! if (ifinal.eq.1) then
