@@ -523,7 +523,7 @@ read(14,*)(my_user(iNum)%res_compensation(i), i=1,nres_level)
 	
 if(my_user(iNum)%user_type.eq.4)then
 
-	read(14,*)t1,t2,t3,t4,t5,t6,t7
+	read(14,*)t1,t2,t3,t4,t5,t6
 
 	my_user(iNum)%max_discharge = t1
 	my_user(iNum)%installed_capacity = t2
