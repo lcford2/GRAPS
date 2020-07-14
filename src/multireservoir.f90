@@ -541,7 +541,7 @@ if(my_user(iNum)%user_type.eq.4)then
 
 end if
 write(*,*) my_user(iNum)%name
-read(14,*)nlags
+read(14,*) nlags
 
 my_user(iNum)%nlags = nlags
 
