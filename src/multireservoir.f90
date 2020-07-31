@@ -180,9 +180,9 @@ Allocate(cons_global(ncons),value_net(nensem))
 ! It will ease the solver.
 ! At this point, rule curves are not incorporated as constraints. It could be modified if required.
 
-Allocate(my_flow_set(nwatershed),parallel_track(nwatershed))
+Allocate(my_flow_set(nwatershed+nfnode),parallel_track(nwatershed))
 
-Do i = 1,nwatershed
+Do i = 1,nwatershed+nfnode
 	Allocate(my_flow_set(i)%controlled_flows(ntime), my_flow_set(i)%uncontrolled_flows(ntime,nensem))
 end do
 
