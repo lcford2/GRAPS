@@ -1,7 +1,7 @@
 # GRAPS
 Generalized Reservoir Analyses using Probabilistic Streamflow
 
-Current release DOI: [![DOI](https://zenodo.org/badge/201519161.svg)](https://zenodo.org/badge/latestdoi/201519161)
+[![DOI](https://zenodo.org/badge/201519161.svg)](https://zenodo.org/badge/latestdoi/201519161)
 
 ## Binaries and Compilation
 
