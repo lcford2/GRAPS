@@ -13,15 +13,17 @@
 		Integer, allocatable ::  parent_type(:),child_type(:)
 		Integer, allocatable :: ffraction(:)
 
-		double precision minimum_release, maximum_release, loss_factor
+		double precision minimum_release, maximum_release
 		double precision tariff,penalty, failure_prob,con_res_vol,penalty_compen
 		double precision, allocatable :: demand_fract(:), res_compensation(:),restr_fract(:)
 
 		double precision max_discharge,installed_capacity,generator_efficiency,storage_energy_coeff(2)
 		double precision unit_rate_energy
-        double precision, allocatable :: tail_elevation(:)
+                double precision, allocatable :: tail_elevation(:)
 
-	END TYPE User
+
+
+   END TYPE User
 
 	TYPE Reservoir
 
@@ -39,17 +41,16 @@
 		double precision latitude, longitude
 		double precision elevation_max, elevation_min, storage_max, storage_min
 		double precision elevation_storage_coeff(3), storage_area_coeff(2)
-		double precision eot_storage
-		
+
 		double precision, allocatable :: elevation_rvalve(:), area_rvalve(:),loss_coeff_max(:), loss_coeff_min(:) 
-		double precision current_storage, target_storage, storage_prob
-		double precision, allocatable ::  rule_curve(:),evaporation_rate(:)
+		double precision current_storage, target_storage, storage_prob, final_storage
+		double precision, allocatable ::  rule_curve_upper(:), rule_curve_lower(:), evaporation_rate(:)
 		double precision, allocatable :: tar_restr_prob(:),restr_fraction(:),crest_level(:),discharge_max(:)
-		double precision, allocatable :: spill(:,:)
+		
 
 	END TYPE Reservoir
 
-   	TYPE Flow_join_node
+   TYPE Flow_join_node
 
 		Character*40 Name
 		Integer  nuser
@@ -57,9 +58,10 @@
 		Integer, allocatable ::  parent_id(:),child_id(:)
 		Integer, allocatable ::  parent_type(:),child_type(:)
 
-  	END TYPE Flow_join_node
+  END TYPE Flow_join_node
 
-	TYPE Sink
+
+TYPE Sink
 
 		Character*40 Name
 		Integer   ID,nparent
@@ -69,127 +71,135 @@
 
 		double precision max_storage
 
-	END TYPE Sink
 
-	TYPE Watershed
+END TYPE Sink
 
-		Character*40 Name
-		Integer   ID,nchild
 
-		Integer, allocatable ::  child_id(:)
-		Integer, allocatable ::  child_type(:)
+TYPE Watershed
 
-		double precision drainage_area
-		double precision, allocatable :: natural_inflows(:,:)
+	Character*40 Name
+	Integer   ID,nchild
 
-	END TYPE Watershed
+	Integer, allocatable ::  child_id(:)
+	Integer, allocatable ::  child_type(:)
 
-	TYPE Interbasin
+	double precision drainage_area
+	double precision, allocatable :: natural_inflows(:,:)
 
-		Character*40 Name
-		Integer   ID,nchild
+END TYPE Watershed
 
-		Integer, allocatable ::  child_id(:)
-		Integer, allocatable ::  child_type(:)
+TYPE Interbasin
 
-		double precision drainage_area
-		double precision, allocatable :: average_flow(:)
+	Character*40 Name
+	Integer   ID,nchild
 
-	END TYPE Interbasin
+	Integer, allocatable ::  child_id(:)
+	Integer, allocatable ::  child_type(:)
+
+	double precision drainage_area
+	double precision, allocatable :: average_flow(:)
+
+
+END TYPE Interbasin
+
 
 !   Declarion of Flow Connectors
 
-	TYPE direct_inflows
+TYPE direct_inflows
 
-		Character*40 Name
-		Integer start_id, end_id
-		Integer start_type, end_type
+	Character*40 Name
+	Integer start_id, end_id
+	Integer start_type, end_type
 
-		double precision minimum_discharge, maximum_discharge,loss_factor
+	double precision minimum_discharge, maximum_discharge,loss_factor
 
-	END TYPE direct_inflows
+END TYPE direct_inflows
 
-	TYPE Diversion
+TYPE Diversion
 
-		Character*40 Name
-		Integer start_id, end_id
-		Integer start_type, end_type
+	Character*40 Name
+	Integer start_id, end_id
+	Integer start_type, end_type
 
-		double precision minimum_discharge, maximum_discharge,loss_factor
+	double precision minimum_discharge, maximum_discharge,loss_factor
 
-	END TYPE Diversion
+END TYPE Diversion
 
-	TYPE passage_flow
+TYPE passage_flow
 
-		Character*40 Name
-		Integer start_id, end_id
-		Integer start_type, end_type
+	Character*40 Name
+	Integer start_id, end_id
+	Integer start_type, end_type
 
-		double precision minimum_discharge, maximum_discharge,loss_factor
+	double precision minimum_discharge, maximum_discharge,loss_factor
 
-	END TYPE passage_flow
+END TYPE passage_flow
 
-	TYPE return_inflows
 
-		Character*40 Name
-		Integer start_id, end_id
-		Integer start_type, end_type
+TYPE return_inflows
 
-		double precision minimum_discharge, maximum_discharge,loss_factor
+	Character*40 Name
+	Integer start_id, end_id
+	Integer start_type, end_type
 
-	END TYPE return_inflows
+	double precision minimum_discharge, maximum_discharge,loss_factor
 
-	TYPE demand_release
+END TYPE return_inflows
 
-		Character*40 Name
-		Integer start_id, end_id
-		Integer start_type, end_type
 
-		double precision minimum_discharge, maximum_discharge,loss_factor
+TYPE demand_release
 
-	END TYPE demand_release
+	Character*40 Name
+	Integer start_id, end_id
+	Integer start_type, end_type
 
-	TYPE Interbasin_flow
+	double precision minimum_discharge, maximum_discharge,loss_factor
 
-		Character*40 Name
-		Integer start_id, end_id
-		Integer start_type, end_type
+END TYPE demand_release
 
-		double precision minimum_discharge, maximum_discharge,loss_factor
 
-	END TYPE Interbasin_flow
 
-	TYPE Natural_flow
+TYPE Interbasin_flow
 
-		Character*40 Name
-		Integer start_id, end_id
-		Integer start_type, end_type
+	Character*40 Name
+	Integer start_id, end_id
+	Integer start_type, end_type
 
-		double precision minimum_discharge, maximum_discharge,loss_factor
+	double precision minimum_discharge, maximum_discharge,loss_factor
 
-	END TYPE Natural_flow
+END TYPE Interbasin_flow
 
-	TYPE Spill_flow
+TYPE Natural_flow
 
-		Character*40 Name
-		Integer start_id, end_id
-		Integer start_type, end_type
+	Character*40 Name
+	Integer start_id, end_id
+	Integer start_type, end_type
 
-		double precision minimum_discharge, maximum_discharge,loss_factor
+	double precision minimum_discharge, maximum_discharge,loss_factor
 
-	END TYPE Spill_flow
+END TYPE Natural_flow
 
-	TYPE ordered_network
+TYPE Spill_flow
 
-		Integer order_id, order_type
+	Character*40 Name
+	Integer start_id, end_id
+	Integer start_type, end_type
 
-	END TYPE ordered_network
+	double precision minimum_discharge, maximum_discharge,loss_factor
 
-	TYPE flow_definitions
+END TYPE Spill_flow
 
-		doubleprecision, allocatable :: controlled_flows(:)
-		doubleprecision, allocatable :: uncontrolled_flows(:,:)
+TYPE ordered_network
 
-	END TYPE flow_definitions
+	Integer order_id, order_type
+
+END TYPE ordered_network
+
+TYPE flow_definitions
+
+	doubleprecision, allocatable :: controlled_flows(:)
+	doubleprecision, allocatable :: uncontrolled_flows(:,:)
+
+END TYPE flow_definitions
 
 END MODULE Definitions

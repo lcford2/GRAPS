@@ -256,10 +256,12 @@ c
       nnineq=nineq
 c
 c     check input data
-c
+c 
+      
       if(iprint.gt.0) write(io,9900)
       call check(nparam,nf,Linfty,nAD,nineq,nineqn,neq,neqn,
      *           mode,modem,nwa,eps,bigbnd,bl,bu)
+      
       if(info.eq.7) goto 9000
       lstype=nwa
 c
@@ -280,6 +282,7 @@ c
         goto 110
  100  continue
  110  nclin=ncnstr-nn
+      
 c
 c  check whether linear constraints are feasible
 c
@@ -2323,8 +2326,10 @@ c
       double precision function lfuscp(val,thrshd)
 c     implicit real*8(a-h,o-z)
       double precision val,thrshd
-c
-      if(dabs(val).le.thrshd) lfuscp=0
+c     integer lfuscp
+c     
+      lfuscp = 0
+      ! if(dabs(val).le.thrshd) lfuscp=0
       if(dabs(val).gt.thrshd) lfuscp=1
       return
       end
