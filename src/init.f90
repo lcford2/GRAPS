@@ -307,9 +307,10 @@ subroutine initialize(init_nparam, init_index_cons, init_dec_vars, num_res, num_
     50 FORMAT(F10.3)
     333 FORMAT(i0,A,A)
     do j = 1, nuser
-        ! write(*, 333) j, ",", my_user(j)%name
         write(222,333) j, ',', my_user(j)%name
     end do
+    ! Need to flush id_name.out so it can be used by COREGS
+    FLUSH(222)
     ! end of init
     ! RETURN
     ! 100	STOP

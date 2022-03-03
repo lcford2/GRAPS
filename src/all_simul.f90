@@ -606,7 +606,7 @@ do i = 1,nensem
 		q(j) = my_flow_set(iflow_set)%uncontrolled_flows(j,i) + &
 			   my_flow_set(iflow_set)%controlled_flows(j)
 		if (ifinal.eq.1) then
-            write(108, "(A,F0.2,F0.2)") my_reservoir(icurrent_id)%name, &
+            write(108, "(A,F0.2,2X,F0.2)") my_reservoir(icurrent_id)%name, &
                 my_flow_set(iflow_set)%uncontrolled_flows(j,i), &
                 my_flow_set(iflow_set)%controlled_flows(j)
         end if
@@ -655,7 +655,8 @@ do i = 1,nensem
 		end if
 	end do
 
-    WRITE(FMT15, '("A, 2X, " I0, "(2X, F15.2))")') ntime
+    WRITE(FMT15, '("(A, 2X, " I0, "(2X, F15.2))")') ntime
+
 	if (ifinal.eq.1) then 
    		write(31,FMT15) my_reservoir(icurrent_id)%name, (simul_stor(j), j=1,ntime)        
 		write(28,FMT15) my_reservoir(icurrent_id)%name, (act_release(j), j=1,ntime)
