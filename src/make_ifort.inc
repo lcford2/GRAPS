@@ -1,0 +1,2 @@
+FF=ifort
+FFLAGS=-Ofast
