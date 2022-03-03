@@ -37,4 +37,10 @@ double precision, allocatable :: lukes_cons(:), hydro_benefit(:), all_release(:)
 ! inproc_vertices length, to treat it similar to a stack
 integer :: inproc_top
 
+! format strings
+character(len=60) FMT15
+character(len=60) FMT17
+character(len=60) FMT19
+
+
 END MODULE my_variables

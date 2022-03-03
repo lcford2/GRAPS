@@ -24,7 +24,10 @@ Program multireservoir
 
     open(unit=10, file = trim(input_path)//'input.dat',				ACTION = 'READ', STATUS = 'OLD')
     read(10,*) ntime, nensem
-    read(10,*)nwatershed,nnatural_flow,num_res,num_user,nfnode,ndir_inflows,nret_inflows,ndiversion,nspill_flow,ninterbasin_flow,ndemand_release,nsink,ninterbasin
+    read(10,*)nwatershed,nnatural_flow,num_res,num_user,&
+              nfnode,ndir_inflows,nret_inflows,ndiversion,&
+              nspill_flow,ninterbasin_flow,ndemand_release,&
+              nsink,ninterbasin
     nparam = (num_user*ntime)
     close(10)
 

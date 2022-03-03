@@ -109,8 +109,10 @@ do i = 1, nsimul_block
 		constraints(icount) = cons_global(icount)
 		! cons_mag(icount) = my_reservoir(icurrent_id)%final_storage - my_reservoir(icurrent_id)%target_storage
 		! If the final storage is less than the lower rule curve at the end of the modeled period
-		cons_mag(icount) = my_reservoir(icurrent_id)%final_storage - max(my_reservoir(icurrent_id)%rule_curve_lower(ntime)*0.95, my_reservoir(icurrent_id)%storage_min)
-		! cons_global(icount) = cons_mag(icount)
+		cons_mag(icount) = my_reservoir(icurrent_id)%final_storage - max( &
+            my_reservoir(icurrent_id)%rule_curve_lower(ntime)*0.95, &
+            my_reservoir(icurrent_id)%storage_min)
+        ! cons_global(icount) = cons_mag(icount)
 		! if (cons_global(icount).gt.0) then
 		! 	write(*,*) my_reservoir(icurrent_id)%name, cons_mag(icount), cons_global(icount)
 		! endif
@@ -292,8 +294,11 @@ subroutine fix_spill_deficit(nparam, ncons, decision_var)
 	call constr_res(nparam, index_cons, decision_var, gcons)	
 end subroutine fix_spill_deficit
 
-subroutine python_simulate(nparam,index_cons,decision_var,gcons,py_hydro_benefit,py_id_output,py_value_output,py_constraints,py_cons_id,py_cons_mag,&
-						   py_min_rel,py_max_rel,py_user_id,py_spill_values,py_deficit_values,py_res_ids_for_spdef,func_flag)
+subroutine python_simulate(nparam,index_cons,decision_var,gcons,&
+                           py_hydro_benefit,py_id_output,py_value_output,&
+                           py_constraints,py_cons_id,py_cons_mag,&
+						   py_min_rel,py_max_rel,py_user_id,py_spill_values,&
+                           py_deficit_values,py_res_ids_for_spdef,func_flag)
 	Use My_variables
 	double precision, dimension(nparam) :: decision_var
 	integer nparam, index_cons
@@ -333,8 +338,11 @@ subroutine python_simulate(nparam,index_cons,decision_var,gcons,py_hydro_benefit
 end subroutine python_simulate
 
 
-subroutine python_optimize(nparam,index_cons,decision_var,gcons,py_hydro_benefit,py_id_output,py_value_output,py_constraints,py_cons_id,py_cons_mag,&
-						   py_min_rel,py_max_rel,py_user_id,py_spill_values,py_deficit_values,py_res_ids_for_spdef,func_flag)
+subroutine python_optimize(nparam,index_cons,decision_var,gcons,&
+                           py_hydro_benefit,py_id_output,py_value_output,&
+                           py_constraints,py_cons_id,py_cons_mag,&
+						   py_min_rel,py_max_rel,py_user_id,py_spill_values,&
+                           py_deficit_values,py_res_ids_for_spdef,func_flag)
 	Use My_variables
 	double precision, dimension(nparam) :: decision_var
 	integer nparam, index_cons, i
@@ -597,7 +605,11 @@ do i = 1,nensem
 	do j = 1,ntime
 		q(j) = my_flow_set(iflow_set)%uncontrolled_flows(j,i) + &
 			   my_flow_set(iflow_set)%controlled_flows(j)
-		if (ifinal.eq.1) write(108, "(A,F,F)") my_reservoir(icurrent_id)%name, my_flow_set(iflow_set)%uncontrolled_flows(j,i), my_flow_set(iflow_set)%controlled_flows(j)
+		if (ifinal.eq.1) then
+            write(108, "(A,F0.2,F0.2)") my_reservoir(icurrent_id)%name, &
+                my_flow_set(iflow_set)%uncontrolled_flows(j,i), &
+                my_flow_set(iflow_set)%controlled_flows(j)
+        end if
 	end do
 	
 
@@ -643,13 +655,13 @@ do i = 1,nensem
 		end if
 	end do
 
+    WRITE(FMT15, '("A, 2X, " I0, "(2X, F15.2))")') ntime
 	if (ifinal.eq.1) then 
-   		write(31,15) my_reservoir(icurrent_id)%name, (simul_stor(j), j=1,ntime)        
-		15 format(a,2x, <ntime>(2x,F12.2))
-		write(28,15) my_reservoir(icurrent_id)%name, (act_release(j), j=1,ntime)
-		write(44,15) my_reservoir(icurrent_id)%name, (simul_deficit(j), j=1,ntime)
-		write(30,15) my_reservoir(icurrent_id)%name, (simul_spill(j), j=1, ntime)
-		write(24,15) my_reservoir(icurrent_id)%name, (release(j), j=1, ntime)
+   		write(31,FMT15) my_reservoir(icurrent_id)%name, (simul_stor(j), j=1,ntime)        
+		write(28,FMT15) my_reservoir(icurrent_id)%name, (act_release(j), j=1,ntime)
+		write(44,FMT15) my_reservoir(icurrent_id)%name, (simul_deficit(j), j=1,ntime)
+		write(30,FMT15) my_reservoir(icurrent_id)%name, (simul_spill(j), j=1, ntime)
+		write(24,FMT15) my_reservoir(icurrent_id)%name, (release(j), j=1, ntime)
 		! if (nensem.eq.1)  then
 		! 	! CHARACTER(LEN=*), PARAMETER :: FMT1 = "(A,A,F.2)"
 		! 	125 format(A,A,F10.2)
@@ -687,13 +699,13 @@ if ((nensem.gt.1.0).and.(ifinal.eq.1)) then
 	print *, my_reservoir(icurrent_id)%name, "Target Storage Reliability =", 100*(1-(real(nend_cons)/real(nensem))),'%'
 	print *, my_reservoir(icurrent_id)%name, "Probability of Spill =", 100*(real(spill_count)/real(nensem)), "%"
 	print *, my_reservoir(icurrent_id)%name, "Probability of Deficit =", 100*(real(def_count)/real(nensem)), "%"
-	write(100, 15) my_reservoir(icurrent_id)%name, (spill_tot(j)/real(nensem), j=1,ntime)
-	write(101, 15) my_reservoir(icurrent_id)%name, (def_tot(j)/real(nensem), j=1,ntime)
-	write(102, 15) my_reservoir(icurrent_id)%name, (spill_count(j)/real(nensem), j=1,ntime)
-	write(103, 15) my_reservoir(icurrent_id)%name, (def_count(j)/real(nensem), j=1,ntime)
-	write(104, 15) my_reservoir(icurrent_id)%name, (hydro_tot(j)/real(nensem), j=1,ntime)
-	write(105, 15) my_reservoir(icurrent_id)%name, (storage_tot(j)/real(nensem), j=1,ntime)
-	write(106, 15) my_reservoir(icurrent_id)%name, (release_tot(j)/real(nensem), j=1,ntime)
+	write(100,FMT15) my_reservoir(icurrent_id)%name, (spill_tot(j)/real(nensem), j=1,ntime)
+	write(101,FMT15) my_reservoir(icurrent_id)%name, (def_tot(j)/real(nensem), j=1,ntime)
+	write(102,FMT15) my_reservoir(icurrent_id)%name, (spill_count(j)/real(nensem), j=1,ntime)
+	write(103,FMT15) my_reservoir(icurrent_id)%name, (def_count(j)/real(nensem), j=1,ntime)
+	write(104,FMT15) my_reservoir(icurrent_id)%name, (hydro_tot(j)/real(nensem), j=1,ntime)
+	write(105,FMT15) my_reservoir(icurrent_id)%name, (storage_tot(j)/real(nensem), j=1,ntime)
+	write(106,FMT15) my_reservoir(icurrent_id)%name, (release_tot(j)/real(nensem), j=1,ntime)
 end if
 
 return
@@ -701,7 +713,9 @@ end
 
 
 ! Subroutine for hydropwer calculation
-subroutine hydropower(iblock_type,iblock_id,icurrent_id, icurrent_type,simul_stor,release, simul_spill, nensemble, hydro_tot, nparam)
+subroutine hydropower(iblock_type,iblock_id,icurrent_id,&
+                      icurrent_type,simul_stor,release, &
+                      simul_spill, nensemble, hydro_tot, nparam)
 Use My_variables
 implicit doubleprecision(a-h,o-z)
 common /final_print/ifinal
@@ -829,9 +843,10 @@ integer constraint_index
 		id_output(array_index) = icurrent_id
 		value_output(array_index) = simul_hydropower(j)
 	enddo
-
-	 if (ifinal.eq.1) then 
-		write(54,19) my_user(icurrent_id)%name, (simul_hydropower(j), j=1,ntime)
+    
+    WRITE(FMT19, '("(A, 2X, " I0, "(2X, F15.3))")') ntime
+	if (ifinal.eq.1) then 
+		write(54,FMT19) my_user(icurrent_id)%name, (simul_hydropower(j), j=1,ntime)
 
 		do j = 1, ntime
 			hydro_tot(j) = hydro_tot(j) + simul_hydropower(j)
@@ -839,7 +854,7 @@ integer constraint_index
 			id_output(array_index) = icurrent_id
 			value_output(array_index) = simul_hydropower(j)
 		end do
-		19 format(a,2x, <ntime>(2x,F10.3))
+		! 19 format(a,2x, <ntime>(2x,F10.3))
 	end if
 	return
 end
@@ -982,8 +997,8 @@ nchild = my_node(icurrent_id)%nchild
 !		end if
 
 	end do
-15 format(a,2x, <ntime>(2x,F12.2))
-if (ifinal.eq.1) write(29,15) my_node(icurrent_id)%name, (release(j), j=1,ntime)
+
+if (ifinal.eq.1) write(29,FMT15) my_node(icurrent_id)%name, (release(j), j=1,ntime)
 ! Loop for flow mass balance
 do j= 1,ntime
 
@@ -1309,7 +1324,7 @@ k2 = nres
 
 ensem = nensem
 4444 format(5x,a,F3.1,2x,F3.1,2x,F3.1)
-4445 format(5x,a,I,2x,F3.1,2x,F3.1,2x,F3.1)
+4445 format(5x,a,I0,2x,F3.1,2x,F3.1,2x,F3.1)
 
 ! Loop for calculating failure probability constraints
 do i = 1,nuser
@@ -1728,10 +1743,19 @@ target_storage = lower_curve
 				current_release - evapo_current - storage_current
 	1072 format(A30, F10.2, F10.2, F10.2, F10.2, F10.2, F10.2, F10.2, F10.2, A10, A10, A10)	
 
-	if (abs(check1.gt.0.01)) print *, my_reservoir(icurrent_id)%name, "  Check 1  ", check1
-	if (ifinal.eq.1) write(107, 1072) my_reservoir(icurrent_id)%name, current_flow, storage_pre, deficit, spill, current_release, evapo_current, storage_current, check1, st_flag, lbound_type, ubound_type
-	
-	
+	if (abs(check1).gt.0.01) print *, my_reservoir(icurrent_id)%name, "  Check 1  ", check1
+	if (ifinal.eq.1) write(107, 1072) my_reservoir(icurrent_id)%name,&
+                                      current_flow, &
+                                      storage_pre, &
+                                      deficit, &
+                                      spill, &
+                                      current_release, &
+                                      evapo_current, &
+                                      storage_current, &
+                                      check1, &
+                                      st_flag, &
+                                      lbound_type, &
+                                      ubound_type
 
 	if ((spill - cons_ignore(spill_con_index)).gt.constraint_tolerance) then
 		! print *, spill, cons_ignore(spill_con_index)

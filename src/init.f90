@@ -476,7 +476,9 @@ Subroutine read_reservoir_details(my_reservoir,nres,ntime,nensem)
     End do
 
     
-    ALLOCATE(my_reservoir(inum)%rule_curve_upper(ntime), my_reservoir(inum)%rule_curve_lower(ntime), my_reservoir(inum)%evaporation_rate(ntime))
+    ALLOCATE(my_reservoir(inum)%rule_curve_upper(ntime), &
+             my_reservoir(inum)%rule_curve_lower(ntime), & 
+             my_reservoir(inum)%evaporation_rate(ntime))
 
     read(13,*)(my_reservoir(inum)%rule_curve_upper(i),i=1,ntime)
     read(13,*)(my_reservoir(inum)%rule_curve_lower(i),i=1,ntime)
